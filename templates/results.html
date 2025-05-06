@@ -1,10 +1,66 @@
+<!-- templates/results.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Recon Results for {{ domain }}</title>
+    <script>
+        function downloadSubdomains(format, type) {
+            const data = {
+                domain: "{{ domain }}",
+                subdomains: type === 'passive' ? {{ passive|tojson }} : {{ active|tojson }},
+                format: format
+            };
+
+            fetch('/download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            }).then(response => {
+                return response.blob();
+            }).then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${data.domain}_${type}_subdomains.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            });
+        }
+    </script>
 </head>
 <body>
-$END$
+    <h1>Subdomain Recon Results for {{ domain }}</h1>
+
+    <h2>Passive Subdomains</h2>
+    <ul>
+        {% for sub in passive %}
+            <li>{{ sub }}</li>
+        {% endfor %}
+    </ul>
+
+    <div>
+        <strong>Download Passive Subdomains:</strong><br>
+        <button onclick="downloadSubdomains('txt', 'passive')">TXT</button>
+        <button onclick="downloadSubdomains('csv', 'passive')">CSV</button>
+        <button onclick="downloadSubdomains('json', 'passive')">JSON</button>
+    </div>
+
+    <h2>Active Subdomains</h2>
+    <ul>
+        {% for sub in active %}
+            <li>{{ sub }}</li>
+        {% endfor %}
+    </ul>
+
+    <div>
+        <strong>Download Active Subdomains:</strong><br>
+        <button onclick="downloadSubdomains('txt', 'active')">TXT</button>
+        <button onclick="downloadSubdomains('csv', 'active')">CSV</button>
+        <button onclick="downloadSubdomains('json', 'active')">JSON</button>
+    </div>
 </body>
 </html>
