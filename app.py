@@ -158,7 +158,8 @@ def download():
     subdomains = passive_subdomains + active_subdomains
 
     if fmt == "json":
-        content = json.dumps(f"Passive Subdomains:{passive_subdomains} and Active Subdomains:{active_subdomains}", indent=3)
+        content = json.dumps(f"Passive Subdomains:{passive_subdomains} and Active Subdomains:{active_subdomains}",
+                             indent=3)
         mime = "application/json"
         ext = "json"
     elif fmt == "csv":
@@ -193,12 +194,19 @@ def threaded_scan(recon):
 
 
 @app.route("/async_scan", methods=["POST"])
+@limiter.limit("5 per minute")  # Optional
 def async_scan():
     domain = request.form.get("domain")
-    recon = AmassRecon(domain)
-    thread = threading.Thread(target=threaded_scan, args=(recon,))
+    if not domain:
+        return jsonify({"error": "Missing domain"}), 400
+
+    if domain in scan_results:
+        del scan_results[domain]
+
+    thread = threading.Thread(target=threaded_scan, args=(domain,))
     thread.start()
-    return jsonify({"status": "Scan started", "domain": domain})
+
+    return jsonify({"status": "Scan started"})
 
 
 @app.route("/scan_results/<domain>", methods=["GET"])
@@ -209,18 +217,6 @@ def get_scan_results(domain):
     else:
         return jsonify({"error": "No results found for this domain"}), 404
 
-
-@app.route("/async_scan", methods=["POST"])
-def async_scan():
-    domain = request.form.get("domain")
-    recon = AmassRecon(domain)
-    thread = threading.Thread(target=threaded_scan, args=(recon,))
-    thread.start()
-    return jsonify({"status": "Scan started"})
-
-
-if __name__ != "__main__":
-    application = app
 
 if __name__ == "__main__":
     app.run(debug=True)
