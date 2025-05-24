@@ -7,35 +7,43 @@
 </head>
 <body class="bg-light">
   <div class="container py-5">
-    <h1 class="mb-4 text-center">🕵️ Web-based ReconCraft</h1>
+    <div class="row justify-content-center">
+      <div class="col-lg-8">
 
-    <form id="scan-form" class="card shadow-sm p-4">
-      <div class="mb-3">
-        <label for="domain" class="form-label">Target Domain</label>
-        <input type="text" class="form-control" id="domain" placeholder="Enter domain" required />
+        <h1 class="mb-4 text-center">🕵️ Web-based ReconCraft</h1>
+
+        <div class="card shadow-sm p-4 mb-4">
+          <form id="scan-form">
+            <div class="row g-3 align-items-center">
+              <div class="col-md-9">
+                <label for="domain" class="form-label">Target Domain</label>
+                <input type="text" class="form-control" id="domain" placeholder="e.g. example.com" required />
+              </div>
+              <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100" id="run-btn">🚀 Scan</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        <div id="loading" class="alert alert-info d-flex align-items-center" style="display: none;">
+          <div class="spinner-border text-primary me-3" role="status">
+            <span class="visually-hidden">Scanning...</span>
+          </div>
+          <span>Scan in progress, please wait...</span>
+        </div>
+
+        <div id="results" class="card shadow-sm p-4" style="display: none;">
+          <h3 class="mb-3">Scan Results for <span id="result-domain" class="text-primary"></span></h3>
+
+          <h5>Passive Subdomains:</h5>
+          <ul id="passive-list" class="list-group mb-4"></ul>
+
+          <h5>Active Subdomains:</h5>
+          <ul id="active-list" class="list-group"></ul>
+        </div>
+
       </div>
-
-      <button type="submit" class="btn btn-primary" id="run-btn">Scan</button>
-    </form>
-    <button id="suspend-btn">⏸️ Suspend</button>
-
-    <div id="loading" class="mt-3" style="display:none;">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Scanning...</span>
-      </div>
-      <span class="ms-2">Scan in progress, please wait...</span>
-    </div>
-
-    <div id="results" class="mt-4" style="display:none;">
-      <h3>Scan Results for <span id="result-domain"></span></h3>
-
-      <h5>Passive Subdomains:</h5>
-      <ul id="passive-list" class="list-group mb-3"></ul>
-
-      <h5>Active Subdomains:</h5>
-      <ul id="active-list" class="list-group"></ul>
-
-      <button id="rescan-btn" class="btn btn-secondary mt-3">Run Another Scan</button>
     </div>
   </div>
 
@@ -47,9 +55,21 @@
     const resultDomainSpan = document.getElementById('result-domain');
     const passiveList = document.getElementById('passive-list');
     const activeList = document.getElementById('active-list');
-    const rescanBtn = document.getElementById('rescan-btn');
 
     let pollInterval = null;
+
+    function startPolling(domain) {
+      pollInterval = setInterval(() => {
+        fetch(`/scan_results/${domain}`)
+          .then(response => response.json())
+          .then(data => {
+            if (data.status === "completed") {
+              clearInterval(pollInterval);
+              window.location.href = `/results/${domain}`;
+            }
+          });
+      }, 3000);
+    }
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -62,119 +82,32 @@
       loadingDiv.style.display = 'flex';
       resultsDiv.style.display = 'none';
 
-      // Start scan by POSTing to /async_scan
       fetch('/async_scan', {
         method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: new URLSearchParams({domain})
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ domain })
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.status === 'Scan started') {
-          resultDomainSpan.textContent = domain;
-          startPolling(domain);
-        } else {
-          alert('Failed to start scan');
+        .then(res => res.json())
+        .then(data => {
+          if (data.status === 'Scan started') {
+            resultDomainSpan.textContent = domain;
+            startPolling(domain);
+          } else {
+            alert('Failed to start scan');
+            runBtn.disabled = false;
+            loadingDiv.style.display = 'none';
+          }
+        })
+        .catch(err => {
+          alert('Error starting scan');
           runBtn.disabled = false;
           loadingDiv.style.display = 'none';
-        }
-      })
-      .catch(err => {
-        alert('Error starting scan');
-        runBtn.disabled = false;
-        loadingDiv.style.display = 'none';
-      });
+        });
     });
 
-    function startPolling(domain) {
-      pollInterval = setInterval(() => {
-        fetch(`/scan_results/${domain}`)
-          .then(res => {
-            if (res.status === 404) {
-              // No results yet
-              return null;
-            }
-            return res.json();
-          })
-          .then(data => {
-            if (data && data.passive && data.active) {
-              clearInterval(pollInterval);
-              displayResults(domain, data.passive, data.active);
-            }
-          })
-          .catch(() => {
-            // Ignore polling errors for now
-          });
-      }, 3000); // every 3 seconds
-    }
-
-    function displayResults(domain, passive, active) {
+    // Force hide loading on page load as a fallback
+    window.addEventListener('DOMContentLoaded', () => {
       loadingDiv.style.display = 'none';
-      runBtn.disabled = false;
-      resultsDiv.style.display = 'block';
-
-      // Clear lists
-      passiveList.innerHTML = '';
-      activeList.innerHTML = '';
-
-      if (passive.length === 0) {
-        passiveList.innerHTML = '<li class="list-group-item">No passive subdomains found.</li>';
-      } else {
-        passive.forEach(sub => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          li.textContent = sub;
-          passiveList.appendChild(li);
-        });
-      }
-
-      if (active.length === 0) {
-        activeList.innerHTML = '<li class="list-group-item">No active subdomains found.</li>';
-      } else {
-        active.forEach(sub => {
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          li.textContent = sub;
-          activeList.appendChild(li);
-        });
-      }
-    }
-
-    rescanBtn.addEventListener('click', () => {
-      resultsDiv.style.display = 'none';
-      form.reset();
-      runBtn.disabled = false;
-      loadingDiv.style.display = 'none';
-    });
-  </script>
-  <script>
-    function startPolling(domain) {
-        const pollInterval = setInterval(() => {
-            fetch(`/scan_results/${domain}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === "completed") {
-                        clearInterval(pollInterval);
-                        window.location.href = `/results/${domain}`;
-                    }
-                });
-        }, 3000);
-    }
-
-    document.getElementById("scan-form").addEventListener("submit", function(e) {
-        e.preventDefault();
-        const domain = document.getElementById("domain-input").value;
-
-        fetch("/async_scan", {
-            method: "POST",
-            body: new URLSearchParams({ domain: domain })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === "Scan started") {
-                startPolling(data.domain);
-            }
-        });
     });
   </script>
 
