@@ -17,6 +17,9 @@
     .progress {
       height: 6px;
     }
+    #loading {
+      display: none !important; /* Force hidden at load */
+    }
   </style>
 </head>
 <body class="bg-light">
@@ -28,19 +31,19 @@
 
     <div class="card shadow-sm p-4 mb-4">
       <form id="scan-form">
-        <div class="row g-3 align-items-center">
+        <div class="row g-2">
           <div class="col-md-9">
-            <label for="domain" class="form-label">Target Domain</label>
+            <label for="domain" class="form-label visually-hidden">Target Domain</label>
             <input type="text" class="form-control" id="domain" placeholder="e.g. example.com" required />
           </div>
-          <div class="col-md-3 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary w-100" id="run-btn">🚀 Scan</button>
+          <div class="col-md-3">
+            <button type="submit" class="btn btn-primary w-100 h-100" id="run-btn">🚀 Scan</button>
           </div>
         </div>
       </form>
     </div>
 
-    <div id="loading" class="alert alert-info d-flex align-items-center" style="display: none;">
+    <div id="loading" class="alert alert-info d-flex align-items-center mt-3">
       <div class="spinner-border text-primary me-3" role="status">
         <span class="visually-hidden">Scanning...</span>
       </div>
@@ -141,7 +144,6 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       loadingDiv.style.display = 'none';
-      // Theme on load
       if (localStorage.getItem('theme') === 'dark') {
         body.classList.add('dark-mode');
       }
