@@ -158,7 +158,7 @@ def download():
     subdomains = passive_subdomains + active_subdomains
 
     if fmt == "json":
-        content = json.dumps(subdomains, indent=2)
+        content = json.dumps(f"Passive Subdomains:{passive_subdomains} and Active Subdomains:{active_subdomains}", indent=3)
         mime = "application/json"
         ext = "json"
     elif fmt == "csv":
