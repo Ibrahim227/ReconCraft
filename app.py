@@ -188,15 +188,22 @@ scan_flags = {}  # domain -> stop flag
 
 
 def threaded_scan(domain):
-    recon = AmassRecon(domain)  # Instantiate your recon class here
+    recon = AmassRecon(domain)  # Instantiate recon class
+    scan_flags[domain] = False
+
     passive, active = recon.run_full_scan()
+
+    if scan_flags.get(domain):
+        print(f"Scan for {domain} suspended")
+        return
+
     scan_results[domain] = {
         "domain": domain,
         "passive": passive,
         "active": active,
         "subdomains": list(set(passive + active))
     }
-    print(f"Scan complete for {domain}")
+    print(f"Threaded scan completed for: {domain}")
 
 
 @app.route("/async_scan", methods=["POST"])
