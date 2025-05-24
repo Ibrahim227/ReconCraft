@@ -1,44 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Scan Results for {{ domain }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <title>Recon Results for {{ domain }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .subdomain-badge {
+            font-size: 0.8rem;
+            margin-left: 0.5rem;
+        }
+        .list-group-item {
+            word-break: break-word;
+        }
+        .section-header {
+            border-bottom: 2px solid #0d6efd;
+            padding-bottom: 0.3rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+            color: #0d6efd;
+        }
+    </style>
 </head>
 <body class="bg-light">
     <div class="container py-5">
-        <h1 class="mb-4 text-center">Scan Results for <strong>{{ domain }}</strong></h1>
+        <h1 class="mb-4 text-center">🔍 Recon Results for <strong>{{ domain }}</strong></h1>
 
-        <div class="row">
-            <div class="col-md-6">
-                <h3>Passive Subdomains</h3>
-                {% if passive %}
-                    <ul class="list-group">
-                    {% for sub in passive %}
-                        <li class="list-group-item">{{ sub }}</li>
+        <!-- Discovered Subdomains -->
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h5 class="section-header">Discovered Subdomains
+                    <span class="badge bg-primary subdomain-badge">{{ subdomains|length }}</span>
+                </h5>
+                {% if subdomains %}
+                <ul class="list-group list-group-flush">
+                    {% for subdomain in subdomains %}
+                        <li class="list-group-item">{{ subdomain }}</li>
                     {% endfor %}
-                    </ul>
+                </ul>
                 {% else %}
-                    <p>No passive subdomains found.</p>
-                {% endif %}
-            </div>
-
-            <div class="col-md-6">
-                <h3>Active Subdomains</h3>
-                {% if active %}
-                    <ul class="list-group">
-                    {% for sub in active %}
-                        <li class="list-group-item">{{ sub }}</li>
-                    {% endfor %}
-                    </ul>
-                {% else %}
-                    <p>No active subdomains found.</p>
+                    <p class="text-muted">No subdomains discovered.</p>
                 {% endif %}
             </div>
         </div>
 
-        <div class="mt-4">
-            <a href="{{ url_for('index') }}" class="btn btn-secondary">Run Another Scan</a>
+        <!-- Passive & Active Subdomains side by side -->
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="section-header">Passive Subdomains
+                            <span class="badge bg-info subdomain-badge">{{ passive|length }}</span>
+                        </h5>
+                        {% if passive %}
+                        <ul class="list-group list-group-flush">
+                            {% for sub in passive %}
+                                <li class="list-group-item">{{ sub }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                            <p class="text-muted">No passive subdomains found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h5 class="section-header">Active Subdomains
+                            <span class="badge bg-success subdomain-badge">{{ active|length }}</span>
+                        </h5>
+                        {% if active %}
+                        <ul class="list-group list-group-flush">
+                            {% for sub in active %}
+                                <li class="list-group-item">{{ sub }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% else %}
+                            <p class="text-muted">No active subdomains found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Download & Navigation buttons -->
+        <div class="d-flex flex-wrap justify-content-between mt-4 gap-2">
+            <a href="{{ url_for('download', format='csv') }}" class="btn btn-outline-primary">Download CSV</a>
+            <a href="{{ url_for('download', format='txt') }}" class="btn btn-outline-secondary">Download TXT</a>
+            <a href="{{ url_for('download', format='json') }}" class="btn btn-outline-success">Download JSON</a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">⬅ Run Another Scan</a>
         </div>
     </div>
 
