@@ -225,19 +225,6 @@ def async_scan():
     return jsonify({"status": "Scan started"})
 
 
-@app.route("/results/<domain>")
-def show_results(domain):
-    result = scan_results.get(domain)
-    if not result:
-        return "Scan results not found.", 404
-
-    return render_template("results.html",
-                           domain=result["domain"],
-                           passive=result["passive"],
-                           active=result["active"],
-                           subdomains=result["subdomains"])
-
-
 @app.route("/suspend_scan/<domain>", methods=["POST"])
 def suspend_scan(domain):
     if domain in scan_flags:
