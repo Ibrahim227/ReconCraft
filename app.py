@@ -208,21 +208,20 @@ def threaded_scan(recon):
 
 
 @app.route("/async_scan", methods=["POST"])
-@limiter.limit("5 per minute")  # Optional
 def async_scan():
     domain = request.form.get("domain")
     if not domain:
         return jsonify({"error": "Missing domain"}), 400
 
     if domain in scan_results:
-        del scan_results[domain]
+        del scan_results[domain]  # clear old result
 
-    recon = AmassRecon(domain)  # Create the recon object from the domain
-    thread = threading.Thread(target=threaded_scan, args=(recon,))
+    # Launch background scan
+    thread = threading.Thread(target=threaded_scan, args=(domain,))
     thread.start()
-    active_scans[domain] = thread  # Store reference
 
-    return jsonify({"status": "Scan started"})
+    return jsonify({"status": "Scan started", "domain": domain})
+
 
 
 @app.route("/suspend_scan/<domain>", methods=["POST"])
@@ -233,16 +232,25 @@ def suspend_scan(domain):
     return jsonify({"error": "No running scan for domain"}), 404
 
 
-@app.route("/scan_results/<domain>", methods=["GET"])
-def get_scan_results(domain):
-    if domain not in scan_results:
-        return jsonify({"status": "pending"}), 404
-    return jsonify({
-        "status": "completed",
-        "domain": domain,
-        "passive": scan_results[domain]["passive"],
-        "active": scan_results[domain]["active"]
-    })
+@app.route("/results/<domain>")
+def show_results(domain):
+    result = scan_results.get(domain)
+    if not result:
+        return "Results not ready or domain not found", 404
+
+    return render_template("results.html",
+        domain=domain,
+        subdomains=result["subdomains"],
+        passive=result["passive"],
+        active=result["active"]
+    )
+
+
+@app.route("/scan_results/<domain>")
+def get_scan_status(domain):
+    if domain in scan_results:
+        return jsonify({"status": "completed"})
+    return jsonify({"status": "pending"}), 202
 
 
 if __name__ == "__main__":
