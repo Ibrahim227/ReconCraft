@@ -3,7 +3,7 @@ import subprocess
 import json
 import threading
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_file, abort
+from flask import Flask, request, jsonify, render_template, send_file, abort, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
@@ -33,10 +33,21 @@ class AmassRecon:
             full_path = os.path.join(self.output_dir, outfile)
             with open(full_path, "w") as f:
                 result = subprocess.run(command, stdout=f, stderr=subprocess.PIPE, shell=True)
-                print(f"Command completed with return code: {result.returncode}")
+                if result.returncode != 0:
+                    error_msg = result.stderr.decode("utf-8")
+                    print(f"Command failed with error: {error_msg}")
+                    # Write an error message to output file for inspection
+                    with open(full_path, "w") as ef:
+                        ef.write(f"ERROR:\n{error_msg}")
+                else:
+                    print(f"Command completed with return code: {result.returncode}")
             return full_path
         else:
             result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if result.returncode != 0:
+                error_msg = result.stderr.decode("utf-8")
+                print(f"Command failed with error: {error_msg}")
+                return error_msg
             print(f"Command completed with return code: {result.returncode}")
             return result.stdout.decode("utf-8")
 
@@ -105,6 +116,11 @@ def index():
         recon = AmassRecon(domain, wordlist_path=wordlist_path, config_path=config_path)
         passive_subs, active_subs = recon.run_full_scan()
 
+        # STORE in session here!
+        session['domain'] = domain
+        session['passive_subdomains'] = passive_subs
+        session['active_subdomains'] = active_subs
+
         return render_template("results.html", domain=domain, passive=passive_subs, active=active_subs)
     return render_template("index.html")
 
@@ -133,10 +149,13 @@ def api_recon():
 
 @app.route("/download", methods=["POST", "GET"])
 def download():
-    data = request.json
-    subdomains = data.get("subdomains", [])
-    fmt = data.get("format", "txt")
-    domain = data.get("domain", "results")
+    fmt = request.args.get('format', 'txt')
+    domain = session.get('domain', 'results')
+    passive_subdomains = session.get('passive_subdomains', [])
+    active_subdomains = session.get('active_subdomains', [])
+
+    # Combine both or customize which to send
+    subdomains = passive_subdomains + active_subdomains
 
     if fmt == "json":
         content = json.dumps(subdomains, indent=2)
@@ -161,9 +180,34 @@ def download():
     )
 
 
+scan_results = {}
+
+
 def threaded_scan(recon):
     passive, active = recon.run_full_scan()
+    scan_results[recon.domain] = {
+        "passive": passive,
+        "active": active
+    }
     print(f"Threaded scan finished for domain: {recon.domain}")
+
+
+@app.route("/async_scan", methods=["POST"])
+def async_scan():
+    domain = request.form.get("domain")
+    recon = AmassRecon(domain)
+    thread = threading.Thread(target=threaded_scan, args=(recon,))
+    thread.start()
+    return jsonify({"status": "Scan started", "domain": domain})
+
+
+@app.route("/scan_results/<domain>", methods=["GET"])
+def get_scan_results(domain):
+    results = scan_results.get(domain)
+    if results:
+        return jsonify(results)
+    else:
+        return jsonify({"error": "No results found for this domain"}), 404
 
 
 @app.route("/async_scan", methods=["POST"])
