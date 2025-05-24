@@ -159,12 +159,12 @@ def download():
     subdomains = passive_subdomains + active_subdomains
 
     if fmt == "json":
-        content = json.dumps(f"Passive Subdomains:{passive_subdomains} and Active Subdomains:{active_subdomains}",
+        content = json.dumps(f"Passive Subdomains:{passive_subdomains} |<<>>| Active Subdomains:{active_subdomains}",
                              indent=3)
         mime = "application/json"
         ext = "json"
     elif fmt == "csv":
-        content = "subdomain\n" + "\n".join(subdomains)
+        content = f'Subdomains for:\n\n' + "\n".join(subdomains)
         mime = "text/csv"
         ext = "csv"
     else:
@@ -187,24 +187,16 @@ active_scans = {}
 scan_flags = {}  # domain -> stop flag
 
 
-def threaded_scan(recon):
-    domain = recon.domain
-    scan_flags[domain] = False
-
+def threaded_scan(domain):
+    recon = AmassRecon(domain)  # Instantiate your recon class here
     passive, active = recon.run_full_scan()
-
-    if scan_flags.get(domain):
-        print(f"Scan for {domain} suspended")
-        return
-
     scan_results[domain] = {
         "domain": domain,
         "passive": passive,
         "active": active,
         "subdomains": list(set(passive + active))
     }
-
-    print(f"Threaded scan finished for domain: {domain}")
+    print(f"Scan complete for {domain}")
 
 
 @app.route("/async_scan", methods=["POST"])
@@ -223,7 +215,6 @@ def async_scan():
     return jsonify({"status": "Scan started", "domain": domain})
 
 
-
 @app.route("/suspend_scan/<domain>", methods=["POST"])
 def suspend_scan(domain):
     if domain in scan_flags:
@@ -239,11 +230,11 @@ def show_results(domain):
         return "Results not ready or domain not found", 404
 
     return render_template("results.html",
-        domain=domain,
-        subdomains=result["subdomains"],
-        passive=result["passive"],
-        active=result["active"]
-    )
+                           domain=domain,
+                           subdomains=result["subdomains"],
+                           passive=result["passive"],
+                           active=result["active"]
+                           )
 
 
 @app.route("/scan_results/<domain>")
