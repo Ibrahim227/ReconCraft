@@ -20,12 +20,13 @@ VALID_API_KEYS = {"your-secure-api-key"}  # Replace or load securely
 class AmassRecon:
     def __init__(self, domain, output_dir="recon_output", wordlist_path=None, config_path=None):
         self.domain = domain
+        self.start_time = datetime.now()
         self.timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.output_dir = os.path.join(output_dir, f"{domain}_{self.timestamp}")
         os.makedirs(self.output_dir, exist_ok=True)
         self.wordlist_path = wordlist_path
         self.config_path = config_path
-        print(f"Initialized AmassRecon for domain: {self.domain}")
+        print(f"Initialized AmassRecon for domain: {self.domain} at {self.start_time}")
 
     def run_command(self, command, outfile=None):
         print(f"Running command: {command}")
@@ -182,15 +183,28 @@ def download():
 
 
 scan_results = {}
+active_scans = {}
+scan_flags = {}  # domain -> stop flag
 
 
 def threaded_scan(recon):
+    domain = recon.domain
+    scan_flags[domain] = False
+
     passive, active = recon.run_full_scan()
-    scan_results[recon.domain] = {
+
+    if scan_flags.get(domain):
+        print(f"Scan for {domain} suspended")
+        return
+
+    scan_results[domain] = {
+        "domain": domain,
         "passive": passive,
-        "active": active
+        "active": active,
+        "subdomains": list(set(passive + active))
     }
-    print(f"Threaded scan finished for domain: {recon.domain}")
+
+    print(f"Threaded scan finished for domain: {domain}")
 
 
 @app.route("/async_scan", methods=["POST"])
@@ -203,19 +217,45 @@ def async_scan():
     if domain in scan_results:
         del scan_results[domain]
 
-    thread = threading.Thread(target=threaded_scan, args=(domain,))
+    recon = AmassRecon(domain)  # Create the recon object from the domain
+    thread = threading.Thread(target=threaded_scan, args=(recon,))
     thread.start()
+    active_scans[domain] = thread  # Store reference
 
     return jsonify({"status": "Scan started"})
 
 
+@app.route("/results/<domain>")
+def show_results(domain):
+    result = scan_results.get(domain)
+    if not result:
+        return "Scan results not found.", 404
+
+    return render_template("results.html",
+                           domain=result["domain"],
+                           passive=result["passive"],
+                           active=result["active"],
+                           subdomains=result["subdomains"])
+
+
+@app.route("/suspend_scan/<domain>", methods=["POST"])
+def suspend_scan(domain):
+    if domain in scan_flags:
+        scan_flags[domain] = True
+        return jsonify({"status": "Scan suspend requested"}), 200
+    return jsonify({"error": "No running scan for domain"}), 404
+
+
 @app.route("/scan_results/<domain>", methods=["GET"])
 def get_scan_results(domain):
-    results = scan_results.get(domain)
-    if results:
-        return jsonify(results)
-    else:
-        return jsonify({"error": "No results found for this domain"}), 404
+    if domain not in scan_results:
+        return jsonify({"status": "pending"}), 404
+    return jsonify({
+        "status": "completed",
+        "domain": domain,
+        "passive": scan_results[domain]["passive"],
+        "active": scan_results[domain]["active"]
+    })
 
 
 if __name__ == "__main__":
