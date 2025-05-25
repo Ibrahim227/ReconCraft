@@ -23,6 +23,8 @@ VALID_API_KEYS = {os.getenv("RECON_API_KEY")}
 scan_results = {}
 scan_lock = threading.Lock()
 
+AMASS_BIN = r"C:\Users\Maman Sani Ibrahim\Documents\amass_Windows_amd64\amass.exe"
+
 
 def save_uploaded_file(file):
     if file and file.filename:
@@ -45,6 +47,7 @@ class AmassRecon:
 
     def run_command(self, command_args, outfile=None):
         print(f"🔧 Running Command: {' '.join(command_args)}")
+
         if outfile:
             full_path = os.path.join(self.output_dir, outfile)
             with open(full_path, "w") as f:
@@ -58,19 +61,19 @@ class AmassRecon:
             return result.stdout.decode("utf-8") if result.returncode == 0 else result.stderr.decode("utf-8")
 
     def intel(self):
-        cmd = ["amass", "intel", "-whois", "-whois-historic", "-ip", "-org", "-d", self.domain]
+        cmd = ["AMASS_BIN", "intel", "-whois", "-whois-historic", "-ip", "-org", "-d", self.domain]
         if self.config_path:
             cmd += ["-config", self.config_path]
         return self.run_command(cmd, f"{self.domain}_intel.txt")
 
     def passive_enum(self):
-        cmd = ["amass", "enum", "-passive", "-json", "-d", self.domain]
+        cmd = ["AMASS_BIN", "enum", "-passive", "-json", "-d", self.domain]
         if self.config_path:
             cmd += ["-config", self.config_path]
         return self.run_command(cmd, f"{self.domain}_passive.json")
 
     def active_enum(self):
-        cmd = ["amass", "enum", "-active", "-brute", "-json", "-d", self.domain]
+        cmd = ["AMASS_BIN", "enum", "-active", "-brute", "-json", "-d", self.domain]
         if self.wordlist_path:
             cmd += ["-w", self.wordlist_path]
         if self.config_path:
