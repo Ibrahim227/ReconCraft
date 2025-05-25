@@ -66,11 +66,44 @@
       max-height: 300px;
       overflow-y: auto;
       box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+      border: 1px solid #333;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
+    #command-log h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+      color: #66ff66;
+    }
+
+    #command-log ul {
+      padding-left: 1.2rem;
+      margin-bottom: 0;
+    }
+
+    #command-log li {
+      margin-bottom: 0.3rem;
+      list-style-type: disc;
+    }
+
+    /* Visible state when activated via JS */
+    #command-log.show {
+      display: block;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Dark mode adjustments */
     .dark-mode #command-log {
       background-color: #0f0f0f;
       color: #00ff99;
+      border: 1px solid #444;
+    }
+
+    .dark-mode #command-log h3 {
+      color: #00ffcc;
     }
   </style>
 </head>
@@ -107,14 +140,7 @@
     </div>
 
     <!-- Command Log -->
-    <div id="command-log">
-      <h3>Command Log</h3>
-      <ul>
-        {% for cmd in session.get('command_log', []) %}
-          <li>{{ cmd }}</li>
-        {% endfor %}
-      </ul>
-    </div>
+    <div id="command-log"></div>
 
 
     <!-- Results -->
@@ -161,8 +187,9 @@
           .then(response => response.json())
           .then(data => {
             if (data.commands) {
-              commandLog.innerText = data.commands.join('\n');
-              commandLog.style.display = 'block';
+              commandLog.innerHTML = `<h3>Command Log</h3><ul>${data.commands.map(cmd => `<li>${cmd}</li>`).join('')}</ul>`;
+              commandLog.classList.add('show');
+
             }
             if (data.status === "completed") {
               clearInterval(pollInterval);
@@ -181,7 +208,7 @@
       runBtn.disabled = true;
       loadingDiv.classList.add('show');
       resultsDiv.style.display = 'none';
-      commandLog.style.display = 'none';
+      commandLog.classList.remove('show');
       commandLog.innerText = '';
       startTimer();
 
