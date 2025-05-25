@@ -23,7 +23,7 @@ VALID_API_KEYS = {os.getenv("RECON_API_KEY")}
 scan_results = {}
 scan_lock = threading.Lock()
 
-AMASS_BIN = r"C:\\Users\\Maman Sani Ibrahim\\Documents\\amass_Windows_amd64\\amass.exe"
+AMASS_BIN = os.getenv("AMASS_PATH")
 
 
 def save_uploaded_file(file):
