@@ -29,7 +29,12 @@ class AmassRecon:
         print(f"Initialized AmassRecon for domain: {self.domain} at {self.start_time}")
 
     def run_command(self, command, outfile=None):
-        print(f"Running command: {command}")
+        short_log = f"🔧 Running Command: {command}"
+        print(short_log)
+
+        # Optional: store in session or global list if you want to display in UI
+        session.setdefault('command_log', []).append(short_log)
+
         if outfile:
             full_path = os.path.join(self.output_dir, outfile)
             with open(full_path, "w") as f:
@@ -184,18 +189,12 @@ def download():
 
 scan_results = {}
 active_scans = {}
-scan_flags = {}  # domain -> stop flag
 
 
 def threaded_scan(domain):
     recon = AmassRecon(domain)  # Instantiate recon class
-    scan_flags[domain] = False
 
     passive, active = recon.run_full_scan()
-
-    if scan_flags.get(domain):
-        print(f"Scan for {domain} suspended")
-        return
 
     scan_results[domain] = {
         "domain": domain,
@@ -220,14 +219,6 @@ def async_scan():
     thread.start()
 
     return jsonify({"status": "Scan started", "domain": domain})
-
-
-@app.route("/suspend_scan/<domain>", methods=["POST"])
-def suspend_scan(domain):
-    if domain in scan_flags:
-        scan_flags[domain] = True
-        return jsonify({"status": "Scan suspend requested"}), 200
-    return jsonify({"error": "No running scan for domain"}), 404
 
 
 @app.route("/results/<domain>")
