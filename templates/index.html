@@ -2,70 +2,83 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Recon Scanner</title>
+  <title>ReconCraft</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
-    /* Dark mode overrides */
-    .dark-mode {
+    body.dark-mode {
       background-color: #121212 !important;
       color: #e0e0e0;
     }
-
     .dark-mode .card {
       background-color: #1e1e1e;
       color: #e0e0e0;
       border-color: #333;
     }
-
     .dark-mode .form-control {
       background-color: #2a2a2a;
       color: #e0e0e0;
       border-color: #444;
     }
-
     .dark-mode .form-control::placeholder {
       color: #888;
     }
-
     .dark-mode .btn-primary {
       background-color: #0d6efd;
       border-color: #0d6efd;
     }
-
     .dark-mode .btn-outline-secondary {
       color: #ccc;
       border-color: #555;
     }
-
     .dark-mode .btn-outline-secondary:hover {
       background-color: #333;
     }
-
     .dark-mode .alert-info {
       background-color: #223344;
       color: #cce5ff;
       border-color: #446688;
     }
 
-    .dark-mode .progress-bar {
-      background-color: #0d6efd;
-    }
-
-    /* Ensure hidden on load */
+    /* Animated loading */
     #loading {
-      display: none !important;
+      display: none;
+      opacity: 0;
+      transform: translateY(-10px);
+      transition: all 0.4s ease-in-out;
+    }
+    #loading.show {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
     }
 
-    .progress {
-      height: 6px;
+    /* Command log styling */
+    #command-log {
+      display: none;
+      background-color: #1a1a1a;
+      color: #33ff33;
+      font-family: monospace;
+      font-size: 0.9rem;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+      box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2);
+    }
+
+    .dark-mode #command-log {
+      background-color: #0f0f0f;
+      color: #00ff99;
     }
   </style>
 </head>
 <body class="bg-light">
   <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="text-center">🕵️ Web-based ReconCraft</h1>
-      <button id="toggle-theme" class="btn btn-outline-secondary btn-sm">🌓 Toggle Dark Mode</button>
+      <h1 class="text-center">🕵️ReconCraft</h1>
+      <button id="toggle-theme" class="btn btn-outline-secondary btn-sm">🌓</button>
     </div>
 
     <div class="card shadow-sm p-4 mb-4">
@@ -82,6 +95,7 @@
       </form>
     </div>
 
+    <!-- Animated Loading -->
     <div id="loading" class="alert alert-info d-flex align-items-center mt-3">
       <div class="spinner-border text-primary me-3" role="status">
         <span class="visually-hidden">Scanning...</span>
@@ -89,12 +103,21 @@
       <div>
         <span>Scan in progress, please wait...</span><br />
         <small id="scan-duration">Elapsed time: 0s</small>
-        <div class="progress mt-2">
-          <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
-        </div>
       </div>
     </div>
 
+    <!-- Command Log -->
+    <div id="command-log">
+      <h3>Command Log</h3>
+      <ul>
+        {% for cmd in session.get('command_log', []) %}
+          <li>{{ cmd }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+
+    <!-- Results -->
     <div id="results" class="card shadow-sm p-4" style="display: none;">
       <h3 class="mb-3">Scan Results for <span id="result-domain" class="text-primary"></span></h3>
       <h5>Passive Subdomains:</h5>
@@ -112,6 +135,7 @@
     const resultDomainSpan = document.getElementById('result-domain');
     const scanDurationText = document.getElementById('scan-duration');
     const toggleBtn = document.getElementById('toggle-theme');
+    const commandLog = document.getElementById('command-log');
     const body = document.body;
 
     let pollInterval = null;
@@ -136,6 +160,10 @@
         fetch(`/scan_results/${domain}`)
           .then(response => response.json())
           .then(data => {
+            if (data.commands) {
+              commandLog.innerText = data.commands.join('\n');
+              commandLog.style.display = 'block';
+            }
             if (data.status === "completed") {
               clearInterval(pollInterval);
               stopTimer();
@@ -147,13 +175,14 @@
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-
       const domain = document.getElementById('domain').value.trim();
       if (!domain) return;
 
       runBtn.disabled = true;
-      loadingDiv.style.display = 'flex';
+      loadingDiv.classList.add('show');
       resultsDiv.style.display = 'none';
+      commandLog.style.display = 'none';
+      commandLog.innerText = '';
       startTimer();
 
       fetch('/async_scan', {
@@ -169,20 +198,20 @@
           } else {
             alert('Failed to start scan');
             runBtn.disabled = false;
-            loadingDiv.style.display = 'none';
+            loadingDiv.classList.remove('show');
             stopTimer();
           }
         })
         .catch(err => {
           alert('Error starting scan');
           runBtn.disabled = false;
-          loadingDiv.style.display = 'none';
+          loadingDiv.classList.remove('show');
           stopTimer();
         });
     });
 
     window.addEventListener('DOMContentLoaded', () => {
-      loadingDiv.style.display = 'none';
+      loadingDiv.classList.remove('show');
       const theme = localStorage.getItem('theme');
       if (theme === 'dark') {
         body.classList.add('dark-mode');
