@@ -1,71 +1,62 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Recon Results for {{ domain }}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     .subdomain-badge {
       font-size: 0.8rem;
       margin-left: 0.5rem;
     }
-
     .list-group-item {
       word-break: break-word;
     }
-
     .section-header {
-      border-bottom: 2px solid #0d6efd;
-      padding-bottom: 0.3rem;
+      border-bottom: 3px solid #0d6efd;
+      padding-bottom: 0.4rem;
       margin-bottom: 1rem;
-      font-weight: 600;
+      font-weight: 700;
       color: #0d6efd;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
-
     /* Dark mode overrides */
     .dark-mode {
       background-color: #121212 !important;
       color: #e0e0e0;
     }
-
     .dark-mode .card {
       background-color: #1e1e1e;
       color: #e0e0e0;
       border-color: #333;
     }
-
     .dark-mode .list-group-item {
       background-color: #2a2a2a;
       border-color: #444;
       color: #e0e0e0;
     }
-
     .dark-mode .section-header {
       border-color: #3b82f6;
       color: #3b82f6;
     }
-
     .dark-mode .btn-outline-primary {
       color: #91caff;
       border-color: #3b82f6;
     }
-
     .dark-mode .btn-outline-secondary {
       color: #ccc;
       border-color: #555;
     }
-
     .dark-mode .btn-outline-success {
       color: #8fffa0;
       border-color: #4ade80;
     }
-
     .dark-mode .btn-secondary {
       background-color: #444;
       color: #eee;
       border-color: #666;
     }
-
     .dark-mode a.btn:hover {
       background-color: #333;
     }
@@ -73,31 +64,92 @@
 </head>
 <body class="bg-light">
   <div class="container py-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="mb-0">🔍 Recon Results for <strong>{{ domain }}</strong></h1>
-      <button id="toggle-theme" class="btn btn-outline-secondary btn-sm">🌓</button>
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+      <h1 class="mb-0 fs-3">🔍 Recon Results for <strong>{{ domain }}</strong></h1>
+      <button id="toggle-theme" class="btn btn-outline-secondary btn-sm">🌓 Toggle Theme</button>
     </div>
 
-    <!-- Discovered Subdomains -->
-    <div class="card shadow-sm mb-4">
-      <div class="card-body">
-        <h5 class="section-header">Discovered Subdomains
-          <span class="badge bg-primary subdomain-badge">{{ subdomains|length }}</span>
-        </h5>
-        {% if subdomains %}
-        <ul class="list-group list-group-flush">
-          {% for subdomain in subdomains %}
-            <li class="list-group-item">{{ subdomain }}</li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-muted">No subdomains discovered.</p>
-        {% endif %}
+    <!-- Enumeration Tools Results -->
+    <div class="row g-4 mb-4">
+      <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <h5 class="section-header">Subfinder
+              <span class="badge bg-primary subdomain-badge">{{ subfinder_subdomains|length }}</span>
+            </h5>
+            {% if subfinder_subdomains %}
+              <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
+                {% for sub in subfinder_subdomains %}
+                  <li class="list-group-item">{{ sub }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0">No results from Subfinder.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <h5 class="section-header">Sublist3r
+              <span class="badge bg-info subdomain-badge">{{ sublist3r_subdomains|length }}</span>
+            </h5>
+            {% if sublist3r_subdomains %}
+              <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
+                {% for sub in sublist3r_subdomains %}
+                  <li class="list-group-item">{{ sub }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0">No results from Sublist3r.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <h5 class="section-header">Alterx (Permuted)
+              <span class="badge bg-warning text-dark subdomain-badge">{{ alterx_subdomains|length }}</span>
+            </h5>
+            {% if alterx_subdomains %}
+              <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
+                {% for sub in alterx_subdomains %}
+                  <li class="list-group-item">{{ sub }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0">No results from Alterx.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body">
+            <h5 class="section-header">Httpx (Active)
+              <span class="badge bg-success subdomain-badge">{{ httpx_subdomains|length }}</span>
+            </h5>
+            {% if httpx_subdomains %}
+              <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
+                {% for sub in httpx_subdomains %}
+                  <li class="list-group-item">{{ sub }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0">No active subdomains found by Httpx.</p>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Passive & Active Subdomains -->
-    <div class="row g-4">
+    <!-- Passive & Active Subdomains Summary -->
+    <div class="row g-4 mb-5">
       <div class="col-md-6">
         <div class="card shadow-sm h-100">
           <div class="card-body">
@@ -105,13 +157,13 @@
               <span class="badge bg-info subdomain-badge">{{ passive|length }}</span>
             </h5>
             {% if passive %}
-            <ul class="list-group list-group-flush">
-              {% for sub in passive %}
-                <li class="list-group-item">{{ sub }}</li>
-              {% endfor %}
-            </ul>
+              <ul class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+                {% for sub in passive %}
+                  <li class="list-group-item">{{ sub }}</li>
+                {% endfor %}
+              </ul>
             {% else %}
-            <p class="text-muted">No passive subdomains found.</p>
+              <p class="text-muted">No passive subdomains found.</p>
             {% endif %}
           </div>
         </div>
@@ -123,13 +175,13 @@
               <span class="badge bg-success subdomain-badge">{{ active|length }}</span>
             </h5>
             {% if active %}
-            <ul class="list-group list-group-flush">
-              {% for sub in active %}
-                <li class="list-group-item">{{ sub }}</li>
-              {% endfor %}
-            </ul>
+              <ul class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+                {% for sub in active %}
+                  <li class="list-group-item">{{ sub }}</li>
+                {% endfor %}
+              </ul>
             {% else %}
-            <p class="text-muted">No active subdomains found.</p>
+              <p class="text-muted">No active subdomains found.</p>
             {% endif %}
           </div>
         </div>
@@ -137,10 +189,10 @@
     </div>
 
     <!-- Download Buttons -->
-    <div class="d-flex flex-wrap justify-content-between mt-4 gap-2">
-      <a href="{{ url_for('download', format='csv') }}" class="btn btn-outline-primary">Download CSV</a>
-      <a href="{{ url_for('download', format='txt') }}" class="btn btn-outline-secondary">Download TXT</a>
-      <a href="{{ url_for('download', format='json') }}" class="btn btn-outline-success">Download JSON</a>
+    <div class="d-flex flex-wrap justify-content-between gap-2">
+      <a href="{{ url_for('download', format='csv') }}" class="btn btn-outline-primary" title="Download results as CSV">Download CSV</a>
+      <a href="{{ url_for('download', format='txt') }}" class="btn btn-outline-secondary" title="Download results as TXT">Download TXT</a>
+      <a href="{{ url_for('download', format='json') }}" class="btn btn-outline-success" title="Download results as JSON">Download JSON</a>
       <a href="{{ url_for('index') }}" class="btn btn-secondary">⬅ Run Another Scan</a>
     </div>
   </div>
