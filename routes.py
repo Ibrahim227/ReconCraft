@@ -19,6 +19,9 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config['UPLOAD_FOLDER'] = "uploads"
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+# Default wordlist
+DEFAULT_WORDLIST = os.getenv("DEFAULT_WORDLIST", "wordlists/default.txt")
+
 # Rate limiting
 limiter = Limiter(get_remote_address, app=app, default_limits=["100 per minute"])
 VALID_API_KEYS = {os.getenv("RECON_API_KEY")}
@@ -45,7 +48,7 @@ class Recon:
         self.timestamp = self.start_time.strftime("%Y%m%d_%H%M%S")
         self.output_dir = os.path.join(output_dir, f"{domain}_{self.timestamp}")
         os.makedirs(self.output_dir, exist_ok=True)
-        self.wordlist_path = wordlist_path
+        self.wordlist_path = wordlist_path or DEFAULT_WORDLIST
 
     def run_command(self, cmd, outfile=None):
         print(f"🔧 Running: {' '.join(cmd)}")
@@ -94,7 +97,6 @@ class Recon:
             for item in lst:
                 yield item
 
-        # Pre-check
         has_httpx = "httpx" in tools
         has_alterx = "alterx" in tools
 
@@ -175,7 +177,8 @@ def index():
         domain = request.form.get("domain")
         selected_tools = request.form.getlist("tools") or ["subfinder", "sublist3r"]
 
-        wordlist_path = save_uploaded_file(request.files.get("wordlist_file"))
+        uploaded_file = request.files.get("wordlist_file")
+        wordlist_path = save_uploaded_file(uploaded_file) or DEFAULT_WORDLIST
 
         if not domain or not selected_tools:
             return "Missing domain or tools", 400
