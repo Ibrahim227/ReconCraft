@@ -3,12 +3,15 @@ import json
 import threading
 import subprocess
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_file, abort, session
+from flask import Flask, request, jsonify, render_template, send_file, abort, session, Blueprint
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 from io import BytesIO
 from dotenv import load_dotenv
+
+
+main = Blueprint('main', __name__)
 
 load_dotenv()
 
@@ -35,7 +38,7 @@ def save_uploaded_file(file):
     return None
 
 
-class AmassRecon:
+class Recon:
     def __init__(self, domain, output_dir="recon_output", wordlist_path=None, config_path=None):
         self.domain = domain
         self.start_time = datetime.now()
@@ -106,7 +109,7 @@ class AmassRecon:
 
 
 def execute_recon(domain, wordlist_path=None, config_path=None):
-    recon = AmassRecon(domain, wordlist_path=wordlist_path, config_path=config_path)
+    recon = Recon(domain, wordlist_path=wordlist_path, config_path=config_path)
     return recon.run_full_scan()
 
 
@@ -222,5 +225,5 @@ def get_scan_status(domain):
     return jsonify({"status": "in_progress"})
 
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# if __name__ == "__main__":
+#     app.run(debug=True)
