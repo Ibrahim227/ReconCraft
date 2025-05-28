@@ -115,67 +115,77 @@
       <button id="toggle-theme" class="btn btn-outline-secondary btn-sm">🌓</button>
     </div>
 
-   <div class="card shadow-sm p-4 mb-4">
-  <form id="scan-form" enctype="multipart/form-data">
-    <div class="row g-3 align-items-end">
+    <div class="card shadow-sm p-4 mb-4">
+      <form id="scan-form" enctype="multipart/form-data">
+        <div class="row g-4">
 
-      <!-- Domain Input -->
-      <div class="col-md-6">
-        <label for="domain" class="form-label fw-semibold">🎯 Target Domain</label>
-        <input type="text" class="form-control" id="domain" name="domain" placeholder="e.g. example.com" required />
-      </div>
-
-      <!-- Domain File Upload -->
-      <div class="col-md-6">
-        <label for="domain_file" class="form-label fw-semibold">📁 Upload Domains List (Optional)</label>
-        <input class="form-control" type="file" name="domain_file" id="domain_file" accept=".txt" />
-        <small class="form-text text-muted">One domain per line, used for bulk scans.</small>
-      </div>
-
-      <!-- Tool Checkboxes and Scan Button -->
-      <div class="col-12">
-        <h6 class="fw-semibold">🛠️ Select Tools to Run:</h6>
-        <div class="d-flex flex-wrap gap-3 align-items-center">
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" name="tools" value="subfinder" id="tool-subfinder" checked />
-            <label class="form-check-label" for="tool-subfinder">Subfinder</label>
+          <!-- Domain Input -->
+          <div class="col-md-6">
+            <label for="domain" class="form-label fw-semibold">🎯 Target Domain</label>
+            <input type="text" class="form-control" id="domain" name="domain" placeholder="e.g. example.com" required />
           </div>
 
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" name="tools" value="sublist3r" id="tool-sublist3r" checked />
-            <label class="form-check-label" for="tool-sublist3r">Sublist3r</label>
+          <!-- Domain File Upload -->
+          <div class="col-md-6">
+            <label for="domain_file" class="form-label fw-semibold">📁 Upload Domains List (Optional)</label>
+            <input class="form-control" type="file" name="domain_file" id="domain_file" accept=".txt" />
+            <small class="form-text text-muted">One domain per line for bulk scanning.</small>
           </div>
 
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" name="tools" value="alterx" id="tool-alterx" />
-            <label class="form-check-label" for="tool-alterx">Alterx (Permutations)</label>
+          <!-- Tool Selection -->
+          <div class="col-12">
+            <h6 class="fw-semibold mb-2">🛠️ Select Tools to Run:</h6>
+            <div class="row g-2">
+              <div class="col-auto">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="tools" value="subfinder" id="tool-subfinder" checked />
+                  <label class="form-check-label" for="tool-subfinder">Subfinder</label>
+                </div>
+              </div>
+
+              <div class="col-auto">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="tools" value="sublist3r" id="tool-sublist3r" checked />
+                  <label class="form-check-label" for="tool-sublist3r">Sublist3r</label>
+                </div>
+              </div>
+
+              <div class="col-auto">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="tools" value="alterx" id="tool-alterx" />
+                  <label class="form-check-label" for="tool-alterx">Alterx (Permutations)</label>
+                </div>
+              </div>
+
+              <div class="col-auto">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="tools" value="httpx" id="tool-httpx" />
+                  <label class="form-check-label" for="tool-httpx">Httpx (Live Check)</label>
+                </div>
+              </div>
+
+              <!-- Submit Button -->
+              <div class="col-md-auto ms-auto">
+                <button type="submit" class="btn btn-primary" id="run-btn">🚀 Run Scan</button>
+              </div>
+            </div>
           </div>
 
-          <div class="form-check form-check-inline">
-            <input class="form-check-input" type="checkbox" name="tools" value="httpx" id="tool-httpx" />
-            <label class="form-check-label" for="tool-httpx">Httpx (Live Check)</label>
+          <!-- Wordlist Upload -->
+          <div class="col-md-6 d-none" id="wordlist-container">
+            <label for="wordlist_file" class="form-label fw-semibold">
+              📁 Wordlist for Alterx
+              <span class="text-info" data-bs-toggle="tooltip" title="Optional. Default 'words.txt' will be used if none uploaded.">
+                <i class="bi bi-info-circle-fill"></i>
+              </span>
+            </label>
+            <input class="form-control" type="file" name="wordlist_file" id="wordlist_file" accept=".txt" />
+            <small class="form-text text-muted">Default: <code>words.txt</code></small>
           </div>
 
-          <button type="submit" class="btn btn-primary ms-auto" id="run-btn">🚀 Run Scan</button>
         </div>
-      </div>
-
-      <!-- Wordlist Upload (hidden unless Alterx is selected) -->
-      <div class="col-md-6 d-none" id="wordlist-container">
-        <label for="wordlist_file" class="form-label fw-semibold">📁 Wordlist for Alterx
-          <span class="text-info" data-bs-toggle="tooltip" title="Optional. If not uploaded, the default 'words.txt' will be used (e.g. admin, dev, staging...)">
-            <i class="bi bi-info-circle-fill"></i>
-          </span>
-        </label>
-        <input class="form-control" type="file" name="wordlist_file" id="wordlist_file" accept=".txt" />
-        <small class="form-text text-muted">Default: <code>words.txt</code> if none uploaded.</small>
-      </div>
-
+      </form>
     </div>
-  </form>
-</div>
-
-
 
 
 
