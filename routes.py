@@ -10,7 +10,6 @@ from werkzeug.utils import secure_filename
 from io import BytesIO
 from dotenv import load_dotenv
 
-
 main = Blueprint('main', __name__)
 
 load_dotenv()
@@ -40,77 +39,84 @@ def save_uploaded_file(file):
 
 
 class Recon:
-    def __init__(self, domain, output_dir="recon_output", wordlist_path=None, config_path=None):
+    def __init__(self, domain, output_dir="recon_output", wordlist_path=None):
         self.domain = domain
         self.start_time = datetime.now()
         self.timestamp = self.start_time.strftime("%Y%m%d_%H%M%S")
         self.output_dir = os.path.join(output_dir, f"{domain}_{self.timestamp}")
         os.makedirs(self.output_dir, exist_ok=True)
         self.wordlist_path = wordlist_path
-        self.config_path = config_path
 
-    def run_command(self, command_args, outfile=None):
-        print(f"🔧 Running Command: {' '.join(command_args)}")
-
+    def run_command(self, cmd, outfile=None):
+        print(f"🔧 Running: {' '.join(cmd)}")
         if outfile:
             full_path = os.path.join(self.output_dir, outfile)
             with open(full_path, "w") as f:
-                result = subprocess.run(command_args, stdout=f, stderr=subprocess.PIPE)
+                result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE)
             if result.returncode != 0:
-                with open(full_path, "w") as ef:
-                    ef.write(f"ERROR:\n{result.stderr.decode('utf-8')}")
+                print(result.stderr.decode())
             return full_path
         else:
-            result = subprocess.run(command_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            return result.stdout.decode("utf-8") if result.returncode == 0 else result.stderr.decode("utf-8")
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            return result.stdout.decode()
 
-    def intel(self):
-        cmd = ["AMASS_BIN", "intel", "-whois", "-whois-historic", "-ip", "-org", "-d", self.domain]
-        if self.config_path:
-            cmd += ["-config", self.config_path]
-        return self.run_command(cmd, f"{self.domain}_intel.txt")
+    def subfinder_enum(self):
+        outfile = f"{self.domain}_subfinder.txt"
+        cmd = ["subfinder", "-d", self.domain, "-silent"]
 
-    def passive_enum(self):
-        cmd = ["AMASS_BIN", "enum", "-passive", "-json", "-d", self.domain]
-        if self.config_path:
-            cmd += ["-config", self.config_path]
-        return self.run_command(cmd, f"{self.domain}_passive.json")
+        return self.run_command(cmd, outfile)
 
-    def active_enum(self):
-        cmd = ["AMASS_BIN", "enum", "-active", "-brute", "-json", "-d", self.domain]
-        if self.wordlist_path:
-            cmd += ["-w", self.wordlist_path]
-        if self.config_path:
-            cmd += ["-config", self.config_path]
-        return self.run_command(cmd, f"{self.domain}_active.json")
+    def sublist3r_enum(self):
+        outfile = f"{self.domain}_sublist3r.txt"
+        cmd = ["sublist3r", "-d", self.domain, "-o", os.path.join(self.output_dir, outfile)]
+        self.run_command(cmd)
+        return os.path.join(self.output_dir, outfile)
 
-    def parse_json_output(self, filename):
-        subs = set()
-        path = os.path.join(self.output_dir, filename)
+    def run_alterx(self, input_file):
+        outfile = f"{self.domain}_alterx.txt"
+        cmd = ["alterx", "-silent", "-w", input_file]
+        return self.run_command(cmd, outfile)
+
+    def run_httpx(self, input_file):
+        outfile = f"{self.domain}_httpx.txt"
+        cmd = ["httpx", "-silent", "-l", input_file]
+        return self.run_command(cmd, outfile)
+
+    def load_file_as_list(self, file_path):
         try:
-            with open(path) as f:
-                for line in f:
-                    try:
-                        obj = json.loads(line)
-                        if "name" in obj:
-                            subs.add(obj["name"])
-                    except json.JSONDecodeError:
-                        continue
+            with open(file_path, "r") as f:
+                return sorted(set(line.strip() for line in f if line.strip()))
         except FileNotFoundError:
-            pass
-        return sorted(subs)
+            return []
 
     def run_full_scan(self):
-        self.intel()
-        passive_path = self.passive_enum()
-        active_path = self.active_enum()
-        passive_subs = self.parse_json_output(os.path.basename(passive_path))
-        active_subs = self.parse_json_output(os.path.basename(active_path))
-        return passive_subs, active_subs
+        subfinder_path = self.subfinder_enum()
+        sublist3r_path = self.sublist3r_enum()
+
+        all_subs = set(self.load_file_as_list(subfinder_path) + self.load_file_as_list(sublist3r_path))
+
+        all_subs_file = os.path.join(self.output_dir, f"{self.domain}_all.txt")
+        with open(all_subs_file, "w") as f:
+            f.write("\n".join(sorted(all_subs)))
+
+        # Alterx for permutations
+        altered_path = self.run_alterx(all_subs_file)
+
+        # Combine all subs
+        combined_subs = sorted(set(all_subs + self.load_file_as_list(altered_path)))
+        combined_file = os.path.join(self.output_dir, f"{self.domain}_combined.txt")
+        with open(combined_file, "w") as f:
+            f.write("\n".join(combined_subs))
+
+        # Httpx to get live domains
+        httpx_path = self.run_httpx(combined_file)
+        live_subs = self.load_file_as_list(httpx_path)
+
+        return sorted(all_subs), live_subs
 
 
-def execute_recon(domain, wordlist_path=None, config_path=None):
-    recon = Recon(domain, wordlist_path=wordlist_path, config_path=config_path)
+def execute_recon(domain, wordlist_path=None):
+    recon = Recon(domain, wordlist_path=wordlist_path)
     return recon.run_full_scan()
 
 
@@ -225,6 +231,5 @@ def get_scan_status(domain):
             return jsonify({"status": "completed", "domain": domain})
     return jsonify({"status": "in_progress"})
 
-
-# if __name__ == "__main__":
-#     app.run(debug=True)
+if __name__ == "__main__":
+    app.run(debug=True)
