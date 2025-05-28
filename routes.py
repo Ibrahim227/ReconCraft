@@ -49,42 +49,38 @@ class Recon:
 
     def run_command(self, cmd, outfile=None):
         print(f"🔧 Running: {' '.join(cmd)}")
-        if outfile:
-            full_path = os.path.join(self.output_dir, outfile)
-            with open(full_path, "w") as f:
-                result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE)
-            if result.returncode != 0:
-                print(result.stderr.decode())
-            return full_path
-        else:
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            return result.stdout.decode()
+        try:
+            if outfile:
+                full_path = os.path.join(self.output_dir, outfile)
+                with open(full_path, "w") as f:
+                    result = subprocess.run(cmd, stdout=f, stderr=subprocess.PIPE)
+                if result.returncode != 0:
+                    print(result.stderr.decode())
+                return full_path
+            else:
+                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                return result.stdout.decode()
+        except FileNotFoundError:
+            print(f"❌ Tool not found: {cmd[0]}")
+            return None
 
     def subfinder_enum(self):
-        outfile = f"{self.domain}_subfinder.txt"
-        cmd = ["subfinder", "-d", self.domain, "-silent"]
-        return self.run_command(cmd, outfile)
+        return self.run_command(["subfinder", "-d", self.domain, "-silent"], f"{self.domain}_subfinder.txt")
 
     def sublist3r_enum(self):
-        outfile = f"{self.domain}_sublist3r.txt"
-        cmd = ["sublist3r", "-d", self.domain, "-o", os.path.join(self.output_dir, outfile)]
-        self.run_command(cmd)
-        return os.path.join(self.output_dir, outfile)
+        output = os.path.join(self.output_dir, f"{self.domain}_sublist3r.txt")
+        self.run_command(["sublist3r", "-d", self.domain, "-o", output])
+        return output
 
     def run_alterx(self, input_file):
-        outfile = f"{self.domain}_alterx.txt"
-        cmd = ["alterx", "-silent", "-w", input_file]
-        return self.run_command(cmd, outfile)
+        return self.run_command(["alterx", "-silent", "-w", input_file], f"{self.domain}_alterx.txt")
 
     def run_httpx(self, input_file):
-        outfile = f"{self.domain}_httpx.txt"
-        cmd = ["httpx", "-silent", "-l", input_file]
-        return self.run_command(cmd, outfile)
+        return self.run_command(["httpx", "-silent", "-l", input_file], f"{self.domain}_httpx.txt")
 
     def load_file_as_list(self, file_path):
         try:
             with open(file_path, "r") as f:
-                # strip lines and ignore empty ones
                 return [line.strip() for line in f if line.strip()]
         except FileNotFoundError:
             return []
@@ -96,52 +92,55 @@ class Recon:
 
         def flatten_list(lst):
             for item in lst:
-                if isinstance(item, list):
-                    for subitem in item:
-                        yield subitem
-                else:
-                    yield item
+                yield item
 
-        # If httpx requested, run enumerations if missing
-        if "httpx" in tools:
+        # Pre-check
+        has_httpx = "httpx" in tools
+        has_alterx = "alterx" in tools
+
+        if has_httpx:
             if "subfinder" not in tools:
                 subfinder_path = self.subfinder_enum()
-                commands_run.append("subfinder")
-                all_subs.update(flatten_list(self.load_file_as_list(subfinder_path)))
+                if subfinder_path:
+                    commands_run.append("subfinder")
+                    all_subs.update(flatten_list(self.load_file_as_list(subfinder_path)))
             if "sublist3r" not in tools:
                 sublist3r_path = self.sublist3r_enum()
-                commands_run.append("sublist3r")
-                all_subs.update(flatten_list(self.load_file_as_list(sublist3r_path)))
+                if sublist3r_path:
+                    commands_run.append("sublist3r")
+                    all_subs.update(flatten_list(self.load_file_as_list(sublist3r_path)))
 
         if "subfinder" in tools:
             subfinder_path = self.subfinder_enum()
-            commands_run.append("subfinder")
-            all_subs.update(flatten_list(self.load_file_as_list(subfinder_path)))
+            if subfinder_path:
+                commands_run.append("subfinder")
+                all_subs.update(flatten_list(self.load_file_as_list(subfinder_path)))
 
         if "sublist3r" in tools:
             sublist3r_path = self.sublist3r_enum()
-            commands_run.append("sublist3r")
-            all_subs.update(flatten_list(self.load_file_as_list(sublist3r_path)))
+            if sublist3r_path:
+                commands_run.append("sublist3r")
+                all_subs.update(flatten_list(self.load_file_as_list(sublist3r_path)))
 
-        # Save all enumerated subdomains
         all_subs_file = os.path.join(self.output_dir, f"{self.domain}_all.txt")
         with open(all_subs_file, "w") as f:
             f.write("\n".join(sorted(all_subs)))
 
-        if "alterx" in tools:
+        if has_alterx:
             altered_path = self.run_alterx(all_subs_file)
-            commands_run.append("alterx")
-            all_subs.update(flatten_list(self.load_file_as_list(altered_path)))
+            if altered_path:
+                commands_run.append("alterx")
+                all_subs.update(flatten_list(self.load_file_as_list(altered_path)))
 
-        # Save combined list after alterx
         combined_file = os.path.join(self.output_dir, f"{self.domain}_combined.txt")
         with open(combined_file, "w") as f:
             f.write("\n".join(sorted(all_subs)))
 
-        if "httpx" in tools:
+        if has_httpx:
             httpx_path = self.run_httpx(combined_file)
-            commands_run.append("httpx")
-            active = self.load_file_as_list(httpx_path)
+            if httpx_path:
+                commands_run.append("httpx")
+                active = self.load_file_as_list(httpx_path)
 
         passive = sorted(all_subs - set(active))
         return passive, active, commands_run
@@ -174,11 +173,16 @@ def run_scan(domain, tools):
 def index():
     if request.method == "POST":
         domain = request.form.get("domain")
+        selected_tools = request.form.getlist("tools") or ["subfinder", "sublist3r"]
+
         wordlist_path = save_uploaded_file(request.files.get("wordlist_file"))
+
+        if not domain or not selected_tools:
+            return "Missing domain or tools", 400
 
         try:
             recon = Recon(domain, wordlist_path=wordlist_path)
-            passive, active, _ = recon.run_custom_scan(["subfinder", "sublist3r", "alterx", "httpx"])
+            passive, active, _ = recon.run_custom_scan(selected_tools)
         except Exception as e:
             return f"Scan failed: {str(e)}", 500
 
