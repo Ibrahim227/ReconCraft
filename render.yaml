@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: ReconCraft
+    env: python
+    buildCommand: ""
+    startCommand: gunicorn routes:app
+    envVars:
+      - key: FLASK_ENV
+        value: production
