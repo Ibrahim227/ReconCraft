@@ -6,28 +6,27 @@ from datetime import datetime
 from io import BytesIO
 
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify, render_template, send_file, session, Blueprint
+from flask import Flask, request, jsonify, render_template, send_file, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 
-main = Blueprint('main', __name__)
-
+# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
-
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config['UPLOAD_FOLDER'] = "uploads"
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
+# Rate limiting
 limiter = Limiter(get_remote_address, app=app, default_limits=["100 per minute"])
 VALID_API_KEYS = {os.getenv("RECON_API_KEY")}
 
+# In-memory store
 scan_results = {}
+scan_status = {}
 scan_lock = threading.Lock()
-
-AMASS_BIN = os.getenv("AMASS_PATH")
 
 
 def save_uploaded_file(file):
@@ -64,7 +63,6 @@ class Recon:
     def subfinder_enum(self):
         outfile = f"{self.domain}_subfinder.txt"
         cmd = ["subfinder", "-d", self.domain, "-silent"]
-
         return self.run_command(cmd, outfile)
 
     def sublist3r_enum(self):
@@ -86,39 +84,90 @@ class Recon:
     def load_file_as_list(self, file_path):
         try:
             with open(file_path, "r") as f:
-                return sorted(set(line.strip() for line in f if line.strip()))
+                # strip lines and ignore empty ones
+                return [line.strip() for line in f if line.strip()]
         except FileNotFoundError:
             return []
 
-    def run_full_scan(self):
-        subfinder_path = self.subfinder_enum()
-        sublist3r_path = self.sublist3r_enum()
+    def run_custom_scan(self, tools):
+        all_subs = set()
+        commands_run = []
+        active = []
 
-        all_subs = set(self.load_file_as_list(subfinder_path) + self.load_file_as_list(sublist3r_path))
+        def flatten_list(lst):
+            for item in lst:
+                if isinstance(item, list):
+                    for subitem in item:
+                        yield subitem
+                else:
+                    yield item
 
+        # If httpx requested, run enumerations if missing
+        if "httpx" in tools:
+            if "subfinder" not in tools:
+                subfinder_path = self.subfinder_enum()
+                commands_run.append("subfinder")
+                all_subs.update(flatten_list(self.load_file_as_list(subfinder_path)))
+            if "sublist3r" not in tools:
+                sublist3r_path = self.sublist3r_enum()
+                commands_run.append("sublist3r")
+                all_subs.update(flatten_list(self.load_file_as_list(sublist3r_path)))
+
+        if "subfinder" in tools:
+            subfinder_path = self.subfinder_enum()
+            commands_run.append("subfinder")
+            all_subs.update(flatten_list(self.load_file_as_list(subfinder_path)))
+
+        if "sublist3r" in tools:
+            sublist3r_path = self.sublist3r_enum()
+            commands_run.append("sublist3r")
+            all_subs.update(flatten_list(self.load_file_as_list(sublist3r_path)))
+
+        # Save all enumerated subdomains
         all_subs_file = os.path.join(self.output_dir, f"{self.domain}_all.txt")
         with open(all_subs_file, "w") as f:
             f.write("\n".join(sorted(all_subs)))
 
-        # Alterx for permutations
-        altered_path = self.run_alterx(all_subs_file)
+        if "alterx" in tools:
+            altered_path = self.run_alterx(all_subs_file)
+            commands_run.append("alterx")
+            all_subs.update(flatten_list(self.load_file_as_list(altered_path)))
 
-        # Combine all subs
-        combined_subs = sorted(set(all_subs + self.load_file_as_list(altered_path)))
+        # Save combined list after alterx
         combined_file = os.path.join(self.output_dir, f"{self.domain}_combined.txt")
         with open(combined_file, "w") as f:
-            f.write("\n".join(combined_subs))
+            f.write("\n".join(sorted(all_subs)))
 
-        # Httpx to get live domains
-        httpx_path = self.run_httpx(combined_file)
-        live_subs = self.load_file_as_list(httpx_path)
+        if "httpx" in tools:
+            httpx_path = self.run_httpx(combined_file)
+            commands_run.append("httpx")
+            active = self.load_file_as_list(httpx_path)
 
-        return sorted(all_subs), live_subs
+        passive = sorted(all_subs - set(active))
+        return passive, active, commands_run
 
 
-def execute_recon(domain, wordlist_path=None):
-    recon = Recon(domain, wordlist_path=wordlist_path)
-    return recon.run_full_scan()
+def run_scan(domain, tools):
+    try:
+        recon = Recon(domain)
+        passive, active, cmds = recon.run_custom_scan(tools)
+        with scan_lock:
+            scan_results[domain] = {
+                "domain": domain,
+                "passive": passive,
+                "active": active,
+                "subdomains": sorted(set(passive + active))
+            }
+            scan_status[domain] = {
+                "status": "completed",
+                "commands": cmds
+            }
+    except Exception as e:
+        with scan_lock:
+            scan_status[domain] = {
+                "status": "error",
+                "message": str(e)
+            }
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -126,10 +175,10 @@ def index():
     if request.method == "POST":
         domain = request.form.get("domain")
         wordlist_path = save_uploaded_file(request.files.get("wordlist_file"))
-        config_path = save_uploaded_file(request.files.get("config_file"))
 
         try:
-            passive, active = execute_recon(domain, wordlist_path)
+            recon = Recon(domain, wordlist_path=wordlist_path)
+            passive, active, _ = recon.run_custom_scan(["subfinder", "sublist3r", "alterx", "httpx"])
         except Exception as e:
             return f"Scan failed: {str(e)}", 500
 
@@ -141,25 +190,39 @@ def index():
 
     return render_template("index.html")
 
-#
-# @app.route("/api/recon", methods=["POST"])
-# @limiter.exempt
-# def api_recon():
-#     api_key = request.headers.get("X-API-KEY")
-#     if api_key not in VALID_API_KEYS:
-#         abort(403, "Forbidden: Invalid API Key")
-#
-#     data = request.json
-#     domain = data.get("domain")
-#     wordlist = data.get("wordlist_file")
-#     config = data.get("config_file")
-#
-#     try:
-#         passive, active = execute_recon(domain, wordlist)
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
-#
-#     return jsonify({"domain": domain, "passive": passive, "active": active})
+
+@app.route("/async_scan", methods=["POST"])
+def async_scan():
+    data = request.get_json()
+    domain = data.get('domain', '').strip()
+    tools = data.get('tools', [])
+
+    if not domain:
+        return jsonify({'status': 'error', 'message': 'Missing domain'}), 400
+
+    threading.Thread(target=run_scan, args=(domain, tools)).start()
+    with scan_lock:
+        scan_status[domain] = {'status': 'running', 'commands': []}
+
+    return jsonify({'status': 'Scan started'})
+
+
+@app.route("/results/<domain>")
+@limiter.exempt
+def show_results(domain):
+    with scan_lock:
+        result = scan_results.get(domain)
+    if not result:
+        return "Results not ready or domain not found", 404
+
+    return render_template("results.html", domain=domain, passive=result["passive"], active=result["active"])
+
+
+@app.route("/scan_results/<domain>")
+def get_scan_status(domain):
+    with scan_lock:
+        status = scan_status.get(domain, {"status": "in_progress"})
+        return jsonify(status)
 
 
 @app.route("/download", methods=["GET"])
@@ -184,53 +247,6 @@ def download():
     buffer.seek(0)
     return send_file(buffer, mimetype=mime, as_attachment=True, download_name=f"{domain}_subdomains.{ext}")
 
-
-def threaded_scan(domain):
-    try:
-        passive, active = execute_recon(domain)
-        with scan_lock:
-            scan_results[domain] = {
-                "domain": domain,
-                "passive": passive,
-                "active": active,
-                "subdomains": list(set(passive + active))
-            }
-    except Exception as e:
-        print(f"Scan error for {domain}: {str(e)}")
-
-
-@app.route("/async_scan", methods=["POST"])
-def async_scan():
-    domain = request.form.get("domain")
-    if not domain:
-        return jsonify({"error": "Missing domain"}), 400
-
-    with scan_lock:
-        scan_results.pop(domain, None)
-
-    thread = threading.Thread(target=threaded_scan, args=(domain,))
-    thread.start()
-
-    return jsonify({"status": "Scan started", "domain": domain})
-
-
-@app.route("/results/<domain>")
-@limiter.exempt
-def show_results(domain):
-    with scan_lock:
-        result = scan_results.get(domain)
-    if not result:
-        return "Results not ready or domain not found", 404
-
-    return render_template("results.html", domain=domain, passive=result["passive"], active=result["active"])
-
-
-@app.route("/scan_results/<domain>")
-def get_scan_status(domain):
-    with scan_lock:
-        if domain in scan_results:
-            return jsonify({"status": "completed", "domain": domain})
-    return jsonify({"status": "in_progress"})
 
 if __name__ == "__main__":
     app.run(debug=True)
