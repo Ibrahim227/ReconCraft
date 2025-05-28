@@ -1,14 +1,15 @@
-import os
 import json
-import threading
+import os
 import subprocess
+import threading
 from datetime import datetime
-from flask import Flask, request, jsonify, render_template, send_file, abort, session, Blueprint
+from io import BytesIO
+
+from dotenv import load_dotenv
+from flask import Flask, request, jsonify, render_template, send_file, session, Blueprint
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
-from io import BytesIO
-from dotenv import load_dotenv
 
 main = Blueprint('main', __name__)
 
@@ -128,7 +129,7 @@ def index():
         config_path = save_uploaded_file(request.files.get("config_file"))
 
         try:
-            passive, active = execute_recon(domain, wordlist_path, config_path)
+            passive, active = execute_recon(domain, wordlist_path)
         except Exception as e:
             return f"Scan failed: {str(e)}", 500
 
@@ -140,25 +141,25 @@ def index():
 
     return render_template("index.html")
 
-
-@app.route("/api/recon", methods=["POST"])
-@limiter.exempt
-def api_recon():
-    api_key = request.headers.get("X-API-KEY")
-    if api_key not in VALID_API_KEYS:
-        abort(403, "Forbidden: Invalid API Key")
-
-    data = request.json
-    domain = data.get("domain")
-    wordlist = data.get("wordlist_file")
-    config = data.get("config_file")
-
-    try:
-        passive, active = execute_recon(domain, wordlist, config)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-    return jsonify({"domain": domain, "passive": passive, "active": active})
+#
+# @app.route("/api/recon", methods=["POST"])
+# @limiter.exempt
+# def api_recon():
+#     api_key = request.headers.get("X-API-KEY")
+#     if api_key not in VALID_API_KEYS:
+#         abort(403, "Forbidden: Invalid API Key")
+#
+#     data = request.json
+#     domain = data.get("domain")
+#     wordlist = data.get("wordlist_file")
+#     config = data.get("config_file")
+#
+#     try:
+#         passive, active = execute_recon(domain, wordlist)
+#     except Exception as e:
+#         return jsonify({"error": str(e)}), 500
+#
+#     return jsonify({"domain": domain, "passive": passive, "active": active})
 
 
 @app.route("/download", methods=["GET"])
