@@ -118,9 +118,31 @@
       <form id="scan-form">
         <div class="row g-2">
           <div class="col-md-9">
-            <label for="domain" class="form-label visually-hidden">Target Domain</label>
+<!--            <label for="domain" class="form-label visually-hidden">Target Domain</label>-->
             <input type="text" class="form-control" id="domain" placeholder="e.g. example.com" required />
           </div>
+
+          <!-- ✅ Tool Selection Checkboxes -->
+          <div class="mt-3">
+            <h6>🛠️ Select Tools to Run:</h6>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" name="tools" value="subfinder" id="tool-subfinder" checked>
+              <label class="form-check-label" for="tool-subfinder">Subfinder</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" name="tools" value="sublist3r" id="tool-sublist3r" checked>
+              <label class="form-check-label" for="tool-sublist3r">Sublist3r</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" name="tools" value="alterx" id="tool-alterx">
+              <label class="form-check-label" for="tool-alterx">Alterx (Permutations)</label>
+            </div>
+            <div class="form-check form-check-inline">
+              <input class="form-check-input" type="checkbox" name="tools" value="httpx" id="tool-httpx">
+              <label class="form-check-label" for="tool-httpx">Httpx (Live Check)</label>
+            </div>
+          </div>
+
           <div class="col-md-3">
             <button type="submit" class="btn btn-primary w-100 h-100" id="run-btn">🚀 Scan</button>
           </div>
@@ -212,11 +234,15 @@
       commandLog.innerText = '';
       startTimer();
 
+
+      const selectedTools = Array.from(document.querySelectorAll('input[name="tools"]:checked')).map(el => el.value);
+
       fetch('/async_scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ domain })
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ domain, tools: selectedTools })
       })
+
         .then(res => res.json())
         .then(data => {
           if (data.status === 'Scan started') {
