@@ -16,6 +16,7 @@ main = Blueprint('main', __name__)
 load_dotenv()
 
 app = Flask(__name__)
+
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config['UPLOAD_FOLDER'] = "uploads"
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
