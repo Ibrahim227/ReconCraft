@@ -1,9 +1,11 @@
 import json
 import os
+import re
 import subprocess
 import threading
 from datetime import datetime
 from io import BytesIO
+from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, send_file, session
@@ -41,12 +43,16 @@ def save_uploaded_file(file):
     return None
 
 
+def sanitize_domain(domain):
+    return re.sub(r'[^a-zA-Z0-9.-]', '', domain)
+
+
 class Recon:
     def __init__(self, domain, output_dir="recon_output", wordlist_path=None):
-        self.domain = domain
+        self.domain = sanitize_domain(domain)
         self.start_time = datetime.now()
         self.timestamp = self.start_time.strftime("%Y%m%d_%H%M%S")
-        self.output_dir = os.path.join(output_dir, f"{domain}_{self.timestamp}")
+        self.output_dir = os.path.join(output_dir, f"{self.domain}_{self.timestamp}")
         os.makedirs(self.output_dir, exist_ok=True)
         self.wordlist_path = wordlist_path or DEFAULT_WORDLIST
 
@@ -75,75 +81,72 @@ class Recon:
         self.run_command(["assetfinder", "--subs-only", self.domain, "-o", output])
         return output
 
+    def crtsh_enum(self):
+        outfile = f"{self.domain}_crtsh.txt"
+        outpath = os.path.join(self.output_dir, "crtsh", outfile)
+        os.makedirs(os.path.dirname(outpath), exist_ok=True)
+        query = f"https://crt.sh/?q=%25.{self.domain}&output=json"
+
+        try:
+            raw_output = subprocess.check_output(f"curl -s '{query}'", shell=True, text=True)
+            data = json.loads(raw_output)
+            entries = sorted(set(
+                entry.get("name_value", "").replace("*.", "")
+                for entry in data if entry.get("name_value")
+            ))
+            with open(outpath, "w") as f:
+                f.write("\n".join(entries))
+            return outpath
+        except json.JSONDecodeError:
+            print("❌ crt.sh returned invalid JSON.")
+            return None
+        except subprocess.CalledProcessError as e:
+            print(f"❌ crtsh_enum failed: {e}")
+            return None
+
     def run_alterx(self, input_file):
         return self.run_command(["alterx", "-silent", "-w", input_file], f"{self.domain}_permuted.txt")
 
-    def run_dnsx(self, input_file):
-        return self.run_command(["dnsx", "-silent", "-l", input_file], f"{self.domain}_dnsx_resolved.txt")
-
     def run_httpx(self, input_file):
-        return self.run_command(["httpx", "-l", input_file, "-title", "-tech-detect", "-status-code", "-silent"],
-                                f"{self.domain}_alive_subs.txt")
-
-    # Url crawling
-    def run_gau(self):
-        """Fetch URLs from gau (GetAllUrls)"""
-        outfile = f"{self.domain}_gau.txt"
-        cmd = ["gau", "--subs", self.domain]
-        return self.run_command(cmd, outfile)
-
-    def run_waybackurls(self):
-        """Fetch URLs from waybackurls (requires stdin input)"""
-        outfile = f"{self.domain}_waybackurls.txt"
-        full_path = os.path.join(self.output_dir, outfile)
-        try:
-            with open(full_path, "w") as f:
-                proc = subprocess.Popen(["waybackurls"], stdin=subprocess.PIPE, stdout=f, stderr=subprocess.PIPE)
-                proc.communicate(input=self.domain.encode())
-            return full_path
-        except Exception as e:
-            print(f"❌ Failed to run waybackurls: {e}")
-            return None
-
-    def run_katana(self):
-        """Run katana to crawl URLs (passive mode only, if needed)"""
-        outfile = f"{self.domain}_katana.txt"
-        cmd = ["katana", "-u", f"https://{self.domain}", "-d 5", "-kf", "-jc", "-fx", "-o",
-               os.path.join(self.output_dir, outfile)]
-        return self.run_command(cmd)
-
-    def run_url_crawlers(self):
-        urls = set()
-        crawlers_run = []
-
-        for tool_func, label in [(self.run_gau, "gau"), (self.run_waybackurls, "waybackurls"),
-                                 (self.run_katana, "katana")]:
-            path = tool_func()
-            if path:
-                crawlers_run.append(label)
-                urls.update(self.load_file_as_list(path))
-
-        filtered_urls = sorted(set(self._filter_urls(urls)))
-        output_path = os.path.join(self.output_dir, f"{self.domain}_all_urls.txt")
-        with open(output_path, "w") as f:
-            f.write("\n".join(filtered_urls))
-
-        return output_path, filtered_urls, crawlers_run
-
-    def _filter_urls(self, urls):
-        seen = set()
-        for url in urls:
-            base = url.split("?")[0]
-            if base not in seen:
-                seen.add(base)
-                yield url
+        return self.run_command(["httpx", "-silent", "-l", input_file], f"{self.domain}_alive_subs.txt")
 
     def load_file_as_list(self, file_path):
         try:
             with open(file_path, "r") as f:
-                return [line.strip() for line in f if line.strip()]
+                return [line.strip() for line in f if line.strip() and not line.startswith("null")]
         except FileNotFoundError:
             return []
+
+    def run_url_crawlers(self):
+        all_urls = set()
+        crawlers_run = []
+        tools = [
+            ("gau", ["gau", self.domain]),
+            ("waybackurls", ["waybackurls", self.domain]),
+            ("katana", ["katana", "-u", self.domain])
+        ]
+        for name, cmd in tools:
+            try:
+                print(f"🔧 Crawling URLs with {name}...")
+                result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL, text=True)
+                parsed = set(
+                    self.extract_path_query(line) for line in result.splitlines() if self.extract_path_query(line))
+                all_urls.update(parsed)
+                crawlers_run.append(name)
+            except Exception as e:
+                print(f"⚠️ {name} failed: {e}")
+        url_file = os.path.join(self.output_dir, f"{self.domain}_urls.txt")
+        with open(url_file, "w") as f:
+            f.write("\n".join(sorted(all_urls)))
+        return url_file, sorted(all_urls), crawlers_run
+
+    def extract_path_query(self, url):
+        try:
+            parsed = urlparse(url)
+            if parsed.path or parsed.query:
+                return f"{parsed.path}?{parsed.query}" if parsed.query else parsed.path
+        except Exception as e:
+            return f"Error: {e}"
 
     def run_custom_scan(self, tools):
         all_subs = set()
@@ -155,7 +158,6 @@ class Recon:
             for item in lst:
                 yield item
 
-        # Subdomain enumeration
         if "subfinder" in tools:
             path = self.subfinder_enum()
             if path:
@@ -168,38 +170,37 @@ class Recon:
                 commands_run.append("assetfinder")
                 all_subs.update(flatten_list(self.load_file_as_list(path)))
 
-        # Save all subs to file
+        if "crtsh" in tools:
+            path = self.crtsh_enum()
+            if path:
+                commands_run.append("crtsh")
+                all_subs.update(flatten_list(self.load_file_as_list(path)))
+
         all_subs_file = os.path.join(self.output_dir, f"{self.domain}_all.txt")
         with open(all_subs_file, "w") as f:
             f.write("\n".join(sorted(all_subs)))
 
-        # Permutation
         if "alterx" in tools:
             altered = self.run_alterx(all_subs_file)
             if altered:
                 commands_run.append("alterx")
                 all_subs.update(flatten_list(self.load_file_as_list(altered)))
 
-        # Save combined list
         combined_file = os.path.join(self.output_dir, f"{self.domain}_combined.txt")
         with open(combined_file, "w") as f:
             f.write("\n".join(sorted(all_subs)))
 
-        # DNS resolution
         if "dnsx" in tools:
-            dnsx_path = self.run_dnsx(combined_file)
+            dnsx_path = self.run_command(["dnsx", "-l", combined_file], f"{self.domain}_dnsx.txt")
             if dnsx_path:
                 commands_run.append("dnsx")
                 active = self.load_file_as_list(dnsx_path)
-
-        # HTTP probing
-        if "httpx" in tools:
+        elif "httpx" in tools:
             httpx_path = self.run_httpx(combined_file)
             if httpx_path:
                 commands_run.append("httpx")
                 active = self.load_file_as_list(httpx_path)
 
-        # URL Crawling (optional)
         if "urls" in tools:
             _, urls, crawlers_run = self.run_url_crawlers()
             commands_run.extend(crawlers_run)
@@ -211,12 +212,13 @@ class Recon:
 def run_scan(domain, tools):
     try:
         recon = Recon(domain)
-        passive, active, cmds = recon.run_custom_scan(tools)
+        passive, active, urls, cmds = recon.run_custom_scan(tools)
         with scan_lock:
             scan_results[domain] = {
                 "domain": domain,
                 "passive": passive,
                 "active": active,
+                "urls": urls,
                 "subdomains": sorted(set(passive + active))
             }
             scan_status[domain] = {
@@ -245,7 +247,7 @@ def index():
 
         try:
             recon = Recon(domain, wordlist_path=wordlist_path)
-            passive, active, _ = recon.run_custom_scan(selected_tools)
+            passive, active, _, _ = recon.run_custom_scan(selected_tools)
         except Exception as e:
             return f"Scan failed: {str(e)}", 500
 
@@ -260,9 +262,15 @@ def index():
 
 @app.route("/async_scan", methods=["POST"])
 def async_scan():
-    data = request.get_json()
-    domain = data.get('domain', '').strip()
-    tools = data.get('tools', [])
+    if request.content_type.startswith("application/json"):
+        data = request.get_json()
+        domain = data.get("domain", "").strip()
+        tools = data.get("tools", [])
+    else:
+        domain = request.form.get("domain", "").strip()
+        tools = request.form.getlist("tools")
+        # Optional: support file saving here
+        save_uploaded_file(request.files.get("wordlist_file"))
 
     if not domain:
         return jsonify({'status': 'error', 'message': 'Missing domain'}), 400
