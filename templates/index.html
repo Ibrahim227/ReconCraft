@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="ReconCraft">
   <title>ReconCraft</title>
-  <link rel="icon" href="../static/img/logo02.jpg" type="image/x-icon">
+  <link rel="icon" href="{{ url_for('static', filename='../img/logo02.jpg') }}" type="image/x-icon">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
@@ -155,6 +155,14 @@
 
               <div class="col-auto">
                 <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="tools" value="crtsh" id="tool-crtsh" checked/>
+                  <label class="form-check-label" for="tool-crtsh">Crt.sh</label>
+                </div>
+              </div>
+
+
+              <div class="col-auto">
+                <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="tools" value="urls" id="tool-url" />
                   <label class="form-check-label" for="tool-url">Crawl URLs</label>
                 </div>
@@ -169,10 +177,18 @@
 
               <div class="col-auto">
                 <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="tools" value="dnsx" id="tool-dnsx" />
+                  <label class="form-check-label" for="tool-dnsx">DNSX (Alive Domains)</label>
+                </div>
+              </div>
+
+              <div class="col-auto">
+                <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="tools" value="httpx" id="tool-httpx" />
                   <label class="form-check-label" for="tool-httpx">Httpx (Live Check)</label>
                 </div>
               </div>
+
 
               <!-- Submit Button -->
               <div class="col-md-auto ms-auto">
@@ -284,11 +300,25 @@
 
       const selectedTools = Array.from(document.querySelectorAll('input[name="tools"]:checked')).map(el => el.value);
 
+      const formData = new FormData();
+      formData.append('domain', domain);
+      selectedTools.forEach(tool => formData.append('tools', tool));
+
+      const wordlistFile = document.getElementById('wordlist_file').files[0];
+      if (wordlistFile) {
+        formData.append('wordlist_file', wordlistFile);
+      }
+
+      const domainFile = document.getElementById('domain_file').files[0];
+      if (domainFile) {
+        formData.append('domain_file', domainFile);
+      }
+
       fetch('/async_scan', {
-         method: 'POST',
-         headers: { 'Content-Type': 'application/json' },
-         body: JSON.stringify({ domain, tools: selectedTools })
+        method: 'POST',
+        body: formData
       })
+
 
         .then(res => res.json())
         .then(data => {
