@@ -68,18 +68,75 @@ class Recon:
             return None
 
     def subfinder_enum(self):
-        return self.run_command(["subfinder", "-d", self.domain, "-silent"], f"{self.domain}_subfinder.txt")
+        return self.run_command(["subfinder", "-d", self.domain, "-all", "-recursive"], f"{self.domain}_subs.txt")
 
-    def sublist3r_enum(self):
-        output = os.path.join(self.output_dir, f"{self.domain}_sublist3r.txt")
-        self.run_command(["sublist3r", "-d", self.domain, "-o", output])
+    def assetfinder_enum(self):
+        output = os.path.join(self.output_dir, f"{self.domain}_assetfinder.txt")
+        self.run_command(["assetfinder", "--subs-only", self.domain, "-o", output])
         return output
 
     def run_alterx(self, input_file):
-        return self.run_command(["alterx", "-silent", "-w", input_file], f"{self.domain}_alterx.txt")
+        return self.run_command(["alterx", "-silent", "-w", input_file], f"{self.domain}_permuted.txt")
+
+    def run_dnsx(self, input_file):
+        return self.run_command(["dnsx", "-silent", "-l", input_file], f"{self.domain}_dnsx_resolved.txt")
 
     def run_httpx(self, input_file):
-        return self.run_command(["httpx", "-silent", "-l", input_file], f"{self.domain}_httpx.txt")
+        return self.run_command(["httpx", "-l", input_file, "-title", "-tech-detect", "-status-code", "-silent"],
+                                f"{self.domain}_alive_subs.txt")
+
+    # Url crawling
+    def run_gau(self):
+        """Fetch URLs from gau (GetAllUrls)"""
+        outfile = f"{self.domain}_gau.txt"
+        cmd = ["gau", "--subs", self.domain]
+        return self.run_command(cmd, outfile)
+
+    def run_waybackurls(self):
+        """Fetch URLs from waybackurls (requires stdin input)"""
+        outfile = f"{self.domain}_waybackurls.txt"
+        full_path = os.path.join(self.output_dir, outfile)
+        try:
+            with open(full_path, "w") as f:
+                proc = subprocess.Popen(["waybackurls"], stdin=subprocess.PIPE, stdout=f, stderr=subprocess.PIPE)
+                proc.communicate(input=self.domain.encode())
+            return full_path
+        except Exception as e:
+            print(f"❌ Failed to run waybackurls: {e}")
+            return None
+
+    def run_katana(self):
+        """Run katana to crawl URLs (passive mode only, if needed)"""
+        outfile = f"{self.domain}_katana.txt"
+        cmd = ["katana", "-u", f"https://{self.domain}", "-d 5", "-kf", "-jc", "-fx", "-o",
+               os.path.join(self.output_dir, outfile)]
+        return self.run_command(cmd)
+
+    def run_url_crawlers(self):
+        urls = set()
+        crawlers_run = []
+
+        for tool_func, label in [(self.run_gau, "gau"), (self.run_waybackurls, "waybackurls"),
+                                 (self.run_katana, "katana")]:
+            path = tool_func()
+            if path:
+                crawlers_run.append(label)
+                urls.update(self.load_file_as_list(path))
+
+        filtered_urls = sorted(set(self._filter_urls(urls)))
+        output_path = os.path.join(self.output_dir, f"{self.domain}_all_urls.txt")
+        with open(output_path, "w") as f:
+            f.write("\n".join(filtered_urls))
+
+        return output_path, filtered_urls, crawlers_run
+
+    def _filter_urls(self, urls):
+        seen = set()
+        for url in urls:
+            base = url.split("?")[0]
+            if base not in seen:
+                seen.add(base)
+                yield url
 
     def load_file_as_list(self, file_path):
         try:
@@ -92,60 +149,63 @@ class Recon:
         all_subs = set()
         commands_run = []
         active = []
+        urls = []
 
         def flatten_list(lst):
             for item in lst:
                 yield item
 
-        has_httpx = "httpx" in tools
-        has_alterx = "alterx" in tools
-
-        if has_httpx:
-            if "subfinder" not in tools:
-                subfinder_path = self.subfinder_enum()
-                if subfinder_path:
-                    commands_run.append("subfinder")
-                    all_subs.update(flatten_list(self.load_file_as_list(subfinder_path)))
-            if "sublist3r" not in tools:
-                sublist3r_path = self.sublist3r_enum()
-                if sublist3r_path:
-                    commands_run.append("sublist3r")
-                    all_subs.update(flatten_list(self.load_file_as_list(sublist3r_path)))
-
+        # Subdomain enumeration
         if "subfinder" in tools:
-            subfinder_path = self.subfinder_enum()
-            if subfinder_path:
+            path = self.subfinder_enum()
+            if path:
                 commands_run.append("subfinder")
-                all_subs.update(flatten_list(self.load_file_as_list(subfinder_path)))
+                all_subs.update(flatten_list(self.load_file_as_list(path)))
 
-        if "sublist3r" in tools:
-            sublist3r_path = self.sublist3r_enum()
-            if sublist3r_path:
-                commands_run.append("sublist3r")
-                all_subs.update(flatten_list(self.load_file_as_list(sublist3r_path)))
+        if "assetfinder" in tools:
+            path = self.assetfinder_enum()
+            if path:
+                commands_run.append("assetfinder")
+                all_subs.update(flatten_list(self.load_file_as_list(path)))
 
+        # Save all subs to file
         all_subs_file = os.path.join(self.output_dir, f"{self.domain}_all.txt")
         with open(all_subs_file, "w") as f:
             f.write("\n".join(sorted(all_subs)))
 
-        if has_alterx:
-            altered_path = self.run_alterx(all_subs_file)
-            if altered_path:
+        # Permutation
+        if "alterx" in tools:
+            altered = self.run_alterx(all_subs_file)
+            if altered:
                 commands_run.append("alterx")
-                all_subs.update(flatten_list(self.load_file_as_list(altered_path)))
+                all_subs.update(flatten_list(self.load_file_as_list(altered)))
 
+        # Save combined list
         combined_file = os.path.join(self.output_dir, f"{self.domain}_combined.txt")
         with open(combined_file, "w") as f:
             f.write("\n".join(sorted(all_subs)))
 
-        if has_httpx:
+        # DNS resolution
+        if "dnsx" in tools:
+            dnsx_path = self.run_dnsx(combined_file)
+            if dnsx_path:
+                commands_run.append("dnsx")
+                active = self.load_file_as_list(dnsx_path)
+
+        # HTTP probing
+        if "httpx" in tools:
             httpx_path = self.run_httpx(combined_file)
             if httpx_path:
                 commands_run.append("httpx")
                 active = self.load_file_as_list(httpx_path)
 
+        # URL Crawling (optional)
+        if "urls" in tools:
+            _, urls, crawlers_run = self.run_url_crawlers()
+            commands_run.extend(crawlers_run)
+
         passive = sorted(all_subs - set(active))
-        return passive, active, commands_run
+        return passive, active, urls, commands_run
 
 
 def run_scan(domain, tools):
@@ -175,7 +235,7 @@ def run_scan(domain, tools):
 def index():
     if request.method == "POST":
         domain = request.form.get("domain")
-        selected_tools = request.form.getlist("tools") or ["subfinder", "sublist3r"]
+        selected_tools = request.form.getlist("tools") or ["subfinder", "assetfinder"]
 
         uploaded_file = request.files.get("wordlist_file")
         wordlist_path = save_uploaded_file(uploaded_file) or DEFAULT_WORDLIST
