@@ -66,7 +66,7 @@
   <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
       <h1 class="mb-0 fs-3">🔍 Recon Results for <strong>{{ domain }}</strong></h1>
-      <button id="toggle-theme" class="btn btn-outline-secondary btn-sm">🌓 Toggle Theme</button>
+      <button id="toggle-theme" class="btn btn-outline-secondary btn-sm">🌓</button>
     </div>
 
     <!-- Enumeration Tools Results -->
@@ -97,17 +97,17 @@
       <div class="col-md-6 col-lg-3">
         <div class="card shadow-sm h-100">
           <div class="card-body">
-            <h5 class="section-header">Sublist3r
-              <span class="badge bg-info subdomain-badge">{{ sublist3r_subdomains|length }}</span>
+            <h5 class="section-header">Assetfinder
+              <span class="badge bg-info subdomain-badge">{{ assetfinder_subdomains|length }}</span>
             </h5>
-            {% if sublist3r_subdomains %}
+            {% if assetfinder_subdomains %}
               <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
-                {% for sub in sublist3r_subdomains %}
+                {% for sub in assetfinder_subdomains %}
                   <li class="list-group-item">{{ sub }}</li>
                 {% endfor %}
               </ul>
             {% else %}
-              <p class="text-muted mb-0">No results from Sublist3r.</p>
+              <p class="text-muted mb-0">No results from Assetfinder.</p>
             {% endif %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
               {{ sub }}
