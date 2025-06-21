@@ -86,6 +86,10 @@
             {% else %}
               <p class="text-muted mb-0">No results from Subfinder.</p>
             {% endif %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ sub }}
+              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+            </li>
           </div>
         </div>
       </div>
@@ -105,6 +109,10 @@
             {% else %}
               <p class="text-muted mb-0">No results from Sublist3r.</p>
             {% endif %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ sub }}
+              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+            </li>
           </div>
         </div>
       </div>
@@ -124,6 +132,10 @@
             {% else %}
               <p class="text-muted mb-0">No results from Alterx.</p>
             {% endif %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ sub }}
+              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+            </li>
           </div>
         </div>
       </div>
@@ -142,7 +154,11 @@
               </ul>
             {% else %}
               <p class="text-muted mb-0">No active subdomains found by Httpx.</p>
-            {% endif %}
+            {% endif %}<br>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ sub }}
+              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+            </li>
           </div>
         </div>
       </div>
@@ -164,7 +180,11 @@
               </ul>
             {% else %}
               <p class="text-muted">No passive subdomains found.</p>
-            {% endif %}
+            {% endif %}<br>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ sub }}
+              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+            </li>
           </div>
         </div>
       </div>
@@ -182,7 +202,11 @@
               </ul>
             {% else %}
               <p class="text-muted">No active subdomains found.</p>
-            {% endif %}
+            {% endif %}<br>
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ sub }}
+              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+            </li>
           </div>
         </div>
       </div>
@@ -190,9 +214,11 @@
 
     <!-- Download Buttons -->
     <div class="d-flex flex-wrap justify-content-between gap-2">
-      <a href="{{ url_for('download', format='csv') }}" class="btn btn-outline-primary" title="Download results as CSV">Download CSV</a>
-      <a href="{{ url_for('download', format='txt') }}" class="btn btn-outline-secondary" title="Download results as TXT">Download TXT</a>
-      <a href="{{ url_for('download', format='json') }}" class="btn btn-outline-success" title="Download results as JSON">Download JSON</a>
+      <a href="{{ url_for('download', format='csv') }}" class="btn btn-outline-primary">Download CSV</a>
+      <a href="{{ url_for('download', format='txt') }}" class="btn btn-outline-secondary">Download All</a>
+      <a href="{{ url_for('download', format='json') }}" class="btn btn-outline-success">Download JSON</a>
+      <a href="{{ url_for('download', format='live') }}" class="btn btn-outline-warning">Live Hosts</a>
+      <a href="{{ url_for('download', format='urls') }}" class="btn btn-outline-info">Crawled URLs</a>
       <a href="{{ url_for('index') }}" class="btn btn-secondary">⬅ Run Another Scan</a>
     </div>
   </div>
