@@ -109,22 +109,23 @@
         .dark-mode #command-log h3 {
           color: #00ffcc;
         }
-        /* Enhanced Floating Nav Styling */
-        nav .nav-link {
-          transition: all 0.3s ease;
-          width: 140px;
-          text-decoration: none;
-        }
 
-        nav .nav-link:hover {
-          opacity: 0.9;
-          transform: translateX(-5px);
-        }
+<!--        /* Enhanced Floating Nav Styling */-->
+<!--        nav .nav-link {-->
+<!--          transition: all 0.3s ease;-->
+<!--          width: 140px;-->
+<!--          text-decoration: none;-->
+<!--        }-->
 
-        .dark-mode nav .nav-link {
-          background-color: #444 !important;
-          color: #fff !important;
-        }
+<!--        nav .nav-link:hover {-->
+<!--          opacity: 0.9;-->
+<!--          transform: translateX(-5px);-->
+<!--        }-->
+
+<!--        .dark-mode nav .nav-link {-->
+<!--          background-color: #444 !important;-->
+<!--          color: #fff !important;-->
+<!--        }-->
     </style>
 </head>
 <body class="bg-light">
@@ -227,7 +228,17 @@
             <small class="form-text text-muted">Default: <code>default.txt</code></small>
           </div>
         </div>
+           <!-- Animated Loading -->
       </form>
+      <div id="loading" class="alert alert-info d-flex align-items-center mt-3">
+        <div class="spinner-border text-primary me-3" role="status">
+          <span class="visually-hidden">Scanning...</span>
+        </div>
+        <div>
+          <span>Scan in progress, please wait...</span><br />
+          <small id="scan-duration">Elapsed time: 0s</small>
+        </div>
+      </div>
       <hr>
       <!-- How It Works Section -->
       <section id="how-it-works" class="container py-5">
@@ -261,17 +272,6 @@
         </div>
       </section>
 
-    </div>
-
-    <!-- Animated Loading -->
-    <div id="loading" class="alert alert-info d-flex align-items-center mt-3">
-      <div class="spinner-border text-primary me-3" role="status">
-        <span class="visually-hidden">Scanning...</span>
-      </div>
-      <div>
-        <span>Scan in progress, please wait...</span><br />
-        <small id="scan-duration">Elapsed time: 0s</small>
-      </div>
     </div>
 
     <!-- Command Log -->
@@ -468,17 +468,7 @@
       toggleWordlistVisibility();
     });
   </script>
-  </div> <!-- closing your existing container -->
 
-   <!-- Vertical Floating Navigation -->
-  <nav class="position-fixed end-0 top-50 translate-middle-y me-2 z-3 d-none d-md-flex flex-column align-items-center">
-    <a class="nav-link py-2 px-1 mb-2 bg-primary text-white rounded shadow-sm small fw-semibold text-center" href="#how-it-works" title="How It Works">
-      <i class="bi bi-gear-fill me-1"></i> How It Works
-    </a>
-    <a class="nav-link py-2 px-1 bg-secondary text-white rounded shadow-sm small fw-semibold text-center" href="#contact" title="Contact">
-      <i class="bi bi-envelope-fill me-1"></i> Contact
-    </a>
-  </nav>
 <!--Footer -->
   <footer class="bg-dark text-light py-4 mt-5">
     <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
@@ -507,7 +497,5 @@
       </div>
     </div>
   </footer>
-</body>
-
 </body>
 </html>
