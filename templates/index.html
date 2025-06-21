@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="ReconCraft">
   <title>ReconCraft</title>
-  <link rel="icon" href="{{ url_for('static', filename='../img/logo02.jpg') }}" type="image/x-icon">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo02.jpg') }}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
   <style>
@@ -114,7 +114,9 @@
 <body class="bg-light">
   <div class="container py-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1 class="text-center">🕵️ReconCraft</h1>
+      <h1 class="text-left"><svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-shield-lock-fill me-2" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M8 0c-.69 0-1.913.355-3.12 1.133C3.34 2.07 2 3.045 2 4.637v3.184c0 4.23 3.02 7.354 5.683 8.646a.5.5 0 0 0 .634 0C11.98 15.175 15 12.05 15 7.82V4.637c0-1.59-1.34-2.566-2.88-3.504C9.913.354 8.69 0 8 0zm.5 7a.5.5 0 0 0-1 0v1a.5.5 0 0 0 1 0V7z"/>
+        </svg>ReconCraft</h1>
       <button id="toggle-theme" class="btn btn-outline-secondary btn-sm">🌓</button>
     </div>
 
@@ -178,7 +180,7 @@
               <div class="col-auto">
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="tools" value="dnsx" id="tool-dnsx" />
-                  <label class="form-check-label" for="tool-dnsx">DNSX (Alive Domains)</label>
+                  <label class="form-check-label" for="tool-dnsx">DNSX (Alive Subdomains)</label>
                 </div>
               </div>
 
@@ -208,9 +210,35 @@
             <input class="form-control" type="file" name="wordlist_file" id="wordlist_file" accept=".txt" />
             <small class="form-text text-muted">Default: <code>default.txt</code></small>
           </div>
-
         </div>
       </form>
+      <hr>
+      <!-- How It Works Section -->
+      <section id="how-it-works" class="container py-5">
+        <h2 class="mb-4 text-center">How ReconCraft Works</h2>
+        <p class="lead text-justify mx-auto" style="max-width: 700px;">
+          <strong>ReconCraft</strong> is an advanced reconnaissance tool designed to automate and streamline
+          subdomain enumeration, URL crawling, and live service checks. By integrating powerful
+          tools like Subfinder, Assetfinder, Crt.sh, Alterx, DNSX, and Httpx, ReconCraft
+          efficiently discovers passive and active subdomains to help security professionals
+          identify potential attack surfaces quickly.
+        </p>
+        <p class="text-justify mx-auto" style="max-width: 700px;">
+          Simply enter a target domain or upload a list of domains <strong>(one domain per line for bulk scanning)</strong>,
+          select the scanning tools you'd like to run, and launch the scan. ReconCraft handles asynchronous execution,
+          real-time updates, and detailed results reporting, making the reconnaissance
+          phase faster and more reliable.
+        </p>
+        <p class="text-justify mx-auto" style="max-width: 700px;">
+          Please use ReconCraft responsibly and ethically. Always obtain proper authorization
+          before scanning domains to avoid unauthorized access or legal issues.
+        </p>
+      </section>
+
+<!--      <section id="examples">-->
+<!--        &lt;!&ndash; example scan results or demos &ndash;&gt;-->
+<!--      </section>-->
+
     </div>
 
     <!-- Animated Loading -->
@@ -418,6 +446,43 @@
       toggleWordlistVisibility();
     });
   </script>
+  </div> <!-- closing your existing container -->
+
+  <!-- Fixed vertical nav on the right -->
+  <nav class="nav flex-column position-fixed end-0 top-50 translate-middle-y me-3 z-3">
+    <a class="nav-link" href="#how-it-works">How It Works</a>
+<!--    <a class="nav-link" href="#examples">Examples</a>-->
+    <a class="nav-link" href="#contact">Contact</a>
+  </nav>
+  <!-- Footer -->
+  <footer class="bg-dark text-light py-4 mt-5">
+    <section id="contact" class="container mb-3 text-center text-md-start">
+      <h5 class="fw-semibold mb-3">Contact Us</h5><p>Email: <a href="mailto:contact@reconcraft.example" class="text-light text-decoration-underline">contact@reconcraft.example</a></p>
+    </section>
+    <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
+      <div class="d-flex align-items-center mb-3 mb-md-0">
+        <!-- Example Logo (Bootstrap icon or custom SVG) -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-shield-lock-fill me-2" viewBox="0 0 16 16">
+          <path fill-rule="evenodd" d="M8 0c-.69 0-1.913.355-3.12 1.133C3.34 2.07 2 3.045 2 4.637v3.184c0 4.23 3.02 7.354 5.683 8.646a.5.5 0 0 0 .634 0C11.98 15.175 15 12.05 15 7.82V4.637c0-1.59-1.34-2.566-2.88-3.504C9.913.354 8.69 0 8 0zm.5 7a.5.5 0 0 0-1 0v1a.5.5 0 0 0 1 0V7z"/>
+        </svg>
+        <span class="fs-5 fw-semibold">ReconCraft</span>
+      </div>
+      <div class="mb-3 mb-md-0 text-center text-md-start">
+        <small>
+          Use responsibly &mdash; Always have permission before scanning domains.
+        </small>
+      </div>
+      <div>
+        <a href="https://github.com/yourusername/reconcraft" target="_blank" rel="noopener" class="text-light me-3 text-decoration-none">
+          <i class="bi bi-github fs-4"></i> GitHub
+        </a>
+        <a href="https://linkedin.com/in/yourprofile" target="_blank" rel="noopener" class="text-light text-decoration-none">
+          <i class="bi bi-linkedin fs-4"></i> LinkedIn
+        </a>
+      </div>
+    </div>
+  </footer>
+</body>
 
 </body>
 </html>
