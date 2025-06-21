@@ -239,17 +239,17 @@
   </div>
 
   <script>
-    // This JS script enhances ReconCraft by implementing progress feedback, scan timeouts, error handling, and improved results UI
-
-    // Elements
     const form = document.getElementById('scan-form');
     const runBtn = document.getElementById('run-btn');
     const loadingDiv = document.getElementById('loading');
+    const resultsDiv = document.getElementById('results');
     const resultDomainSpan = document.getElementById('result-domain');
+    const scanDurationText = document.getElementById('scan-duration');
+    const toggleBtn = document.getElementById('toggle-theme');
     const commandLog = document.getElementById('command-log');
     const passiveList = document.getElementById('passive-list');
     const activeList = document.getElementById('active-list');
-    const scanDurationText = document.getElementById('scan-duration');
+    const body = document.body;
 
     let pollInterval = null;
     let durationInterval = null;
@@ -326,31 +326,96 @@
       commandLog.innerText = '';
       startTimer();
 
+
       const selectedTools = Array.from(document.querySelectorAll('input[name="tools"]:checked')).map(el => el.value);
 
-      fetch('/async_scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ domain, tools: selectedTools })
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.status === 'Scan started') {
-            resultDomainSpan.textContent = domain;
-            startPolling(domain);
-          } else {
-            alert('Failed to start scan');
-            runBtn.disabled = false;
-            loadingDiv.classList.remove('show');
-            stopTimer();
-          }
+      const useFormData = document.getElementById('domain_file').files.length || document.getElementById('wordlist_file').files.length;
+
+      runBtn.disabled = true;
+      loadingDiv.classList.add('show');
+      commandLog.classList.remove('show');
+      commandLog.innerText = '';
+      startTimer();
+
+      if (useFormData) {
+        const formData = new FormData();
+        formData.append('domain', domain);
+        selectedTools.forEach(tool => formData.append('tools', tool));
+
+        const wordlistFile = document.getElementById('wordlist_file').files[0];
+        if (wordlistFile) formData.append('wordlist_file', wordlistFile);
+
+        const domainFile = document.getElementById('domain_file').files[0];
+        if (domainFile) formData.append('domain_file', domainFile);
+
+        fetch('/async_scan', {
+          method: 'POST',
+          body: formData
         })
-        .catch(err => {
-          alert('Error starting scan');
+          .then(res => res.json())
+          .then(handleScanResponse)
+          .catch(handleScanError);
+      } else {
+        fetch('/async_scan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain, tools: selectedTools })
+        })
+          .then(res => res.json())
+          .then(handleScanResponse)
+          .catch(handleScanError);
+      }
+
+      function handleScanResponse(data) {
+        if (data.status === 'Scan started') {
+          resultDomainSpan.textContent = domain;
+          startPolling(domain);
+        } else {
+          alert('Failed to start scan');
           runBtn.disabled = false;
           loadingDiv.classList.remove('show');
           stopTimer();
-        });
+        }
+      }
+
+      function handleScanError(err) {
+        alert('Error starting scan');
+        runBtn.disabled = false;
+        loadingDiv.classList.remove('show');
+        stopTimer();
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadingDiv.classList.remove('show');
+      const theme = localStorage.getItem('theme');
+      if (theme === 'dark') {
+        body.classList.add('dark-mode');
+      }
+    });
+
+    toggleBtn.addEventListener('click', () => {
+      body.classList.toggle('dark-mode');
+      localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
+    });
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const alterxCheckbox = document.getElementById("tool-alterx");
+      const wordlistContainer = document.getElementById("wordlist-container");
+
+      function toggleWordlistVisibility() {
+        if (alterxCheckbox.checked) {
+          wordlistContainer.classList.remove("d-none");
+        } else {
+          wordlistContainer.classList.add("d-none");
+        }
+      }
+
+      alterxCheckbox.addEventListener("change", toggleWordlistVisibility);
+
+      // initial check in case the box is pre-checked
+      toggleWordlistVisibility();
     });
   </script>
 
