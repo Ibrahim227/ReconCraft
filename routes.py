@@ -106,7 +106,7 @@ class Recon:
         return self.run_command(["alterx", "-silent", "-w", input_file], f"{self.domain}_permuted.txt")
 
     def run_httpx(self, input_file):
-        return self.run_command(["httpx", "-silent", "-l", input_file], f"{self.domain}_alive_subs.txt")
+        return self.run_command(["httpx", "-silent", "-mc 200", "-l", input_file], f"{self.domain}_alive_subs.txt")
 
     def load_file_as_list(self, file_path):
         try:
@@ -151,6 +151,8 @@ class Recon:
         commands_run = []
         active = []
         urls = []
+        crtsh_results = []
+        dnsx_results = []
 
         def flatten_list(lst):
             for item in lst:
@@ -172,7 +174,8 @@ class Recon:
             path = self.crtsh_enum()
             if path:
                 commands_run.append("crtsh")
-                all_subs.update(flatten_list(self.load_file_as_list(path)))
+                crtsh_results = self.load_file_as_list(path)
+                all_subs.update(flatten_list(crtsh_results))
 
         all_subs_file = os.path.join(self.output_dir, f"{self.domain}_all.txt")
         with open(all_subs_file, "w") as f:
@@ -192,7 +195,9 @@ class Recon:
             dnsx_path = self.run_command(["dnsx", "-l", combined_file], f"{self.domain}_dnsx.txt")
             if dnsx_path:
                 commands_run.append("dnsx")
-                active = self.load_file_as_list(dnsx_path)
+                dnsx_results = self.load_file_as_list(dnsx_path)
+                active = dnsx_results
+
         elif "httpx" in tools:
             httpx_path = self.run_httpx(combined_file)
             if httpx_path:
@@ -204,7 +209,7 @@ class Recon:
             commands_run.extend(crawlers_run)
 
         passive = sorted(all_subs - set(active))
-        return passive, active, urls, commands_run
+        return passive, active, urls, crtsh_results, dnsx_results, commands_run
 
 
 def run_scan(domain, tools):
@@ -214,13 +219,15 @@ def run_scan(domain, tools):
             print("🌀 Using cached result")
             return
         recon = Recon(domain)
-        passive, active, urls, cmds = recon.run_custom_scan(tools)
+        passive, active, urls, crtsh, dnsx, cmds = recon.run_custom_scan(tools)
         with scan_lock:
             scan_results[domain] = {
                 "domain": domain,
                 "passive": passive,
                 "active": active,
                 "urls": urls,
+                "crtsh_subdomains": crtsh,
+                "dnsx_subdomains": dnsx,
                 "subdomains": sorted(set(passive + active))
             }
             scan_status[domain] = {
@@ -237,7 +244,7 @@ def run_scan(domain, tools):
 
 @app.errorhandler(429)
 def ratelimit_handler(e):
-    return jsonify({'status': 'error', 'message': 'Too many requests. Please try again later.'}), 429
+    return jsonify({f'status': f'error + {e}', 'message': 'Too many requests. Please try again later.'}), 429
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -274,8 +281,13 @@ def show_results(domain):
     if not result:
         return "Results not ready or domain not found", 404
 
-    return render_template("results.html", domain=domain, passive=result["passive"], active=result["active"],
-                           urls=result["urls"])
+    return render_template("results.html",
+                           domain=domain,
+                           passive=result["passive"],
+                           active=result["active"],
+                           urls=result["urls"],
+                           crtsh_subdomains=result.get("crtsh_subdomains", []),
+                           dnsx_subdomains=result.get("dnsx_subdomains", []))
 
 
 @app.route("/scan_results/<domain>")
