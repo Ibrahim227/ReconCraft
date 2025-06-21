@@ -109,6 +109,22 @@
         .dark-mode #command-log h3 {
           color: #00ffcc;
         }
+        /* Enhanced Floating Nav Styling */
+        nav .nav-link {
+          transition: all 0.3s ease;
+          width: 140px;
+          text-decoration: none;
+        }
+
+        nav .nav-link:hover {
+          opacity: 0.9;
+          transform: translateX(-5px);
+        }
+
+        .dark-mode nav .nav-link {
+          background-color: #444 !important;
+          color: #fff !important;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -216,28 +232,34 @@
       <!-- How It Works Section -->
       <section id="how-it-works" class="container py-5">
         <h2 class="mb-4 text-center">How ReconCraft Works</h2>
-        <p class="lead text-justify mx-auto" style="max-width: 700px;">
+        <p class="lead justify-content-center mx-auto" style="max-width: 700px;">
           <strong>ReconCraft</strong> is an advanced reconnaissance tool designed to automate and streamline
           subdomain enumeration, URL crawling, and live service checks. By integrating powerful
           tools like Subfinder, Assetfinder, Crt.sh, Alterx, DNSX, and Httpx, ReconCraft
           efficiently discovers passive and active subdomains to help security professionals
           identify potential attack surfaces quickly.
         </p>
-        <p class="text-justify mx-auto" style="max-width: 700px;">
+        <p class="justify-content-center mx-auto" style="max-width: 700px;">
           Simply enter a target domain or upload a list of domains <strong>(one domain per line for bulk scanning)</strong>,
           select the scanning tools you'd like to run, and launch the scan. ReconCraft handles asynchronous execution,
           real-time updates, and detailed results reporting, making the reconnaissance
           phase faster and more reliable.
         </p>
-        <p class="text-justify mx-auto" style="max-width: 700px;">
-          Please use ReconCraft responsibly and ethically. Always obtain proper authorization
-          before scanning domains to avoid unauthorized access or legal issues.
-        </p>
       </section>
 
-<!--      <section id="examples">-->
-<!--        &lt;!&ndash; example scan results or demos &ndash;&gt;-->
-<!--      </section>-->
+      <section id="contact" class="container py-5 border-top">
+        <h2 class="mb-4 text-center"><i class="bi bi-envelope-at-fill me-2"></i>Contact</h2>
+        <div class="row justify-content-center">
+          <div class="col-md-8 text-center">
+            <p class="mb-1">For inquiries, bug reports, or collaboration opportunities, feel free to reach out:</p>
+            <p>
+              <a href="mailto:contact@reconcraft.example" class="text-decoration-none text-primary fw-semibold">
+                <i class="bi bi-envelope-fill me-1"></i>contact@reconcraft.example
+              </a>
+            </p>
+          </div>
+        </div>
+      </section>
 
     </div>
 
@@ -448,30 +470,33 @@
   </script>
   </div> <!-- closing your existing container -->
 
-  <!-- Fixed vertical nav on the right -->
-  <nav class="nav flex-column position-fixed end-0 top-50 translate-middle-y me-3 z-3">
-    <a class="nav-link" href="#how-it-works">How It Works</a>
-<!--    <a class="nav-link" href="#examples">Examples</a>-->
-    <a class="nav-link" href="#contact">Contact</a>
+   <!-- Vertical Floating Navigation -->
+  <nav class="position-fixed end-0 top-50 translate-middle-y me-2 z-3 d-none d-md-flex flex-column align-items-center">
+    <a class="nav-link py-2 px-1 mb-2 bg-primary text-white rounded shadow-sm small fw-semibold text-center" href="#how-it-works" title="How It Works">
+      <i class="bi bi-gear-fill me-1"></i> How It Works
+    </a>
+    <a class="nav-link py-2 px-1 bg-secondary text-white rounded shadow-sm small fw-semibold text-center" href="#contact" title="Contact">
+      <i class="bi bi-envelope-fill me-1"></i> Contact
+    </a>
   </nav>
-  <!-- Footer -->
+<!--Footer -->
   <footer class="bg-dark text-light py-4 mt-5">
-    <section id="contact" class="container mb-3 text-center text-md-start">
-      <h5 class="fw-semibold mb-3">Contact Us</h5><p>Email: <a href="mailto:contact@reconcraft.example" class="text-light text-decoration-underline">contact@reconcraft.example</a></p>
-    </section>
     <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center">
       <div class="d-flex align-items-center mb-3 mb-md-0">
-        <!-- Example Logo (Bootstrap icon or custom SVG) -->
+        <!-- Logo Icon -->
         <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" fill="currentColor" class="bi bi-shield-lock-fill me-2" viewBox="0 0 16 16">
           <path fill-rule="evenodd" d="M8 0c-.69 0-1.913.355-3.12 1.133C3.34 2.07 2 3.045 2 4.637v3.184c0 4.23 3.02 7.354 5.683 8.646a.5.5 0 0 0 .634 0C11.98 15.175 15 12.05 15 7.82V4.637c0-1.59-1.34-2.566-2.88-3.504C9.913.354 8.69 0 8 0zm.5 7a.5.5 0 0 0-1 0v1a.5.5 0 0 0 1 0V7z"/>
         </svg>
         <span class="fs-5 fw-semibold">ReconCraft</span>
       </div>
+
       <div class="mb-3 mb-md-0 text-center text-md-start">
-        <small>
-          Use responsibly &mdash; Always have permission before scanning domains.
+        <small class="d-flex align-items-center text-warning">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>
+          Use responsibly — Always have permission before scanning domains.
         </small>
       </div>
+
       <div>
         <a href="https://github.com/yourusername/reconcraft" target="_blank" rel="noopener" class="text-light me-3 text-decoration-none">
           <i class="bi bi-github fs-4"></i> GitHub
