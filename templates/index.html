@@ -239,19 +239,22 @@
   </div>
 
   <script>
+    // This JS script enhances ReconCraft by implementing progress feedback, scan timeouts, error handling, and improved results UI
+
+    // Elements
     const form = document.getElementById('scan-form');
     const runBtn = document.getElementById('run-btn');
     const loadingDiv = document.getElementById('loading');
-    const resultsDiv = document.getElementById('results');
     const resultDomainSpan = document.getElementById('result-domain');
-    const scanDurationText = document.getElementById('scan-duration');
-    const toggleBtn = document.getElementById('toggle-theme');
     const commandLog = document.getElementById('command-log');
-    const body = document.body;
+    const passiveList = document.getElementById('passive-list');
+    const activeList = document.getElementById('active-list');
+    const scanDurationText = document.getElementById('scan-duration');
 
     let pollInterval = null;
     let durationInterval = null;
     let secondsElapsed = 0;
+    const SCAN_TIMEOUT = 600; // 10 minutes
 
     function startTimer() {
       secondsElapsed = 0;
@@ -259,11 +262,23 @@
       durationInterval = setInterval(() => {
         secondsElapsed++;
         scanDurationText.textContent = `Elapsed time: ${secondsElapsed}s`;
+        if (secondsElapsed >= SCAN_TIMEOUT) {
+          stopTimer();
+          clearInterval(pollInterval);
+          alert("Scan timed out. Please try again or use fewer tools.");
+          loadingDiv.classList.remove("show");
+          runBtn.disabled = false;
+        }
       }, 1000);
     }
 
     function stopTimer() {
       clearInterval(durationInterval);
+    }
+
+    function updateResults(passive, active) {
+      passiveList.innerHTML = passive.map(item => `<li class="list-group-item">${item}</li>`).join('');
+      activeList.innerHTML = active.map(item => `<li class="list-group-item list-group-item-success">${item}</li>`).join('');
     }
 
     function startPolling(domain) {
@@ -274,13 +289,25 @@
             if (data.commands) {
               commandLog.innerHTML = `<h3>Command Log</h3><ul>${data.commands.map(cmd => `<li>${cmd}</li>`).join('')}</ul>`;
               commandLog.classList.add('show');
-
             }
             if (data.status === "completed") {
               clearInterval(pollInterval);
               stopTimer();
-              window.location.href = `/results/${domain}`;
+              fetch(`/results/${domain}`)
+                .then(res => res.text())
+                .then(html => {
+                  document.open();
+                  document.write(html);
+                  document.close();
+                });
             }
+          })
+          .catch(err => {
+            clearInterval(pollInterval);
+            stopTimer();
+            alert("Error polling results. Please try again.");
+            runBtn.disabled = false;
+            loadingDiv.classList.remove("show");
           });
       }, 3000);
     }
@@ -288,38 +315,24 @@
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const domain = document.getElementById('domain').value.trim();
-      if (!domain) return;
+      if (!domain || !/^[a-zA-Z0-9.-]+$/.test(domain)) {
+        alert("Enter a valid domain name.");
+        return;
+      }
 
       runBtn.disabled = true;
       loadingDiv.classList.add('show');
-      resultsDiv.style.display = 'none';
       commandLog.classList.remove('show');
       commandLog.innerText = '';
       startTimer();
 
-
       const selectedTools = Array.from(document.querySelectorAll('input[name="tools"]:checked')).map(el => el.value);
-
-      const formData = new FormData();
-      formData.append('domain', domain);
-      selectedTools.forEach(tool => formData.append('tools', tool));
-
-      const wordlistFile = document.getElementById('wordlist_file').files[0];
-      if (wordlistFile) {
-        formData.append('wordlist_file', wordlistFile);
-      }
-
-      const domainFile = document.getElementById('domain_file').files[0];
-      if (domainFile) {
-        formData.append('domain_file', domainFile);
-      }
 
       fetch('/async_scan', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain, tools: selectedTools })
       })
-
-
         .then(res => res.json())
         .then(data => {
           if (data.status === 'Scan started') {
@@ -338,38 +351,6 @@
           loadingDiv.classList.remove('show');
           stopTimer();
         });
-    });
-
-    window.addEventListener('DOMContentLoaded', () => {
-      loadingDiv.classList.remove('show');
-      const theme = localStorage.getItem('theme');
-      if (theme === 'dark') {
-        body.classList.add('dark-mode');
-      }
-    });
-
-    toggleBtn.addEventListener('click', () => {
-      body.classList.toggle('dark-mode');
-      localStorage.setItem('theme', body.classList.contains('dark-mode') ? 'dark' : 'light');
-    });
-  </script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const alterxCheckbox = document.getElementById("tool-alterx");
-      const wordlistContainer = document.getElementById("wordlist-container");
-
-      function toggleWordlistVisibility() {
-        if (alterxCheckbox.checked) {
-          wordlistContainer.classList.remove("d-none");
-        } else {
-          wordlistContainer.classList.add("d-none");
-        }
-      }
-
-      alterxCheckbox.addEventListener("change", toggleWordlistVisibility);
-
-      // initial check in case the box is pre-checked
-      toggleWordlistVisibility();
     });
   </script>
 
