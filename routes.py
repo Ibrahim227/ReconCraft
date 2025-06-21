@@ -21,14 +21,12 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config['UPLOAD_FOLDER'] = "uploads"
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# Default wordlist
 DEFAULT_WORDLIST = os.getenv("DEFAULT_WORDLIST", "wordlists/default.txt")
 
 # Rate limiting
 limiter = Limiter(get_remote_address, app=app, default_limits=["100 per minute"])
 VALID_API_KEYS = {os.getenv("RECON_API_KEY")}
 
-# In-memory store
 scan_results = {}
 scan_status = {}
 scan_lock = threading.Lock()
@@ -211,6 +209,10 @@ class Recon:
 
 def run_scan(domain, tools):
     try:
+        cache_key = f"{domain}:{sorted(tools)}"
+        if cache_key in scan_results:
+            print("🌀 Using cached result")
+            return
         recon = Recon(domain)
         passive, active, urls, cmds = recon.run_custom_scan(tools)
         with scan_lock:
@@ -233,30 +235,13 @@ def run_scan(domain, tools):
             }
 
 
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({'status': 'error', 'message': 'Too many requests. Please try again later.'}), 429
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
-    if request.method == "POST":
-        domain = request.form.get("domain")
-        selected_tools = request.form.getlist("tools") or ["subfinder", "assetfinder"]
-
-        uploaded_file = request.files.get("wordlist_file")
-        wordlist_path = save_uploaded_file(uploaded_file) or DEFAULT_WORDLIST
-
-        if not domain or not selected_tools:
-            return "Missing domain or tools", 400
-
-        try:
-            recon = Recon(domain, wordlist_path=wordlist_path)
-            passive, active, _, _ = recon.run_custom_scan(selected_tools)
-        except Exception as e:
-            return f"Scan failed: {str(e)}", 500
-
-        session['domain'] = domain
-        session['passive_subdomains'] = passive
-        session['active_subdomains'] = active
-
-        return render_template("results.html", domain=domain, passive=passive, active=active)
-
     return render_template("index.html")
 
 
@@ -269,7 +254,6 @@ def async_scan():
     else:
         domain = request.form.get("domain", "").strip()
         tools = request.form.getlist("tools")
-        # Optional: support file saving here
         save_uploaded_file(request.files.get("wordlist_file"))
 
     if not domain:
@@ -290,7 +274,8 @@ def show_results(domain):
     if not result:
         return "Results not ready or domain not found", 404
 
-    return render_template("results.html", domain=domain, passive=result["passive"], active=result["active"])
+    return render_template("results.html", domain=domain, passive=result["passive"], active=result["active"],
+                           urls=result["urls"])
 
 
 @app.route("/scan_results/<domain>")
@@ -307,13 +292,20 @@ def download():
     domain = session.get('domain', 'results')
     passive = session.get('passive_subdomains', [])
     active = session.get('active_subdomains', [])
+    urls = session.get('urls', [])
 
     if fmt == "json":
-        content = json.dumps({"passive": passive, "active": active}, indent=2)
+        content = json.dumps({"passive": passive, "active": active, "urls": urls}, indent=2)
         mime, ext = "application/json", "json"
     elif fmt == "csv":
         content = "\n".join(["Subdomains:"] + passive + active)
         mime, ext = "text/csv", "csv"
+    elif fmt == "live":
+        content = "\n".join(active)
+        mime, ext = "text/plain", "live.txt"
+    elif fmt == "urls":
+        content = "\n".join(urls)
+        mime, ext = "text/plain", "urls.txt"
     else:
         content = "\n".join(passive + active)
         mime, ext = "text/plain", "txt"
