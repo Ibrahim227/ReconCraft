@@ -349,13 +349,7 @@
             if (data.status === "completed") {
               clearInterval(pollInterval);
               stopTimer();
-              fetch(`/results/${domain}`)
-                .then(res => res.text())
-                .then(html => {
-                  document.open();
-                  document.write(html);
-                  document.close();
-                });
+              window.location.href = `/results/${domain}`;
             }
           })
           .catch(err => {
