@@ -1,9 +1,12 @@
 services:
   - type: web
-    name: ReconCraft
+    name: reconcraft-api
     env: python
-    buildCommand: ""
+    buildCommand: "./build.sh"
     startCommand: gunicorn routes:app
     envVars:
       - key: FLASK_ENV
         value: production
+      - key:  RECON_API_KEY
+        value: myapikey
+    autoDeploy: true
