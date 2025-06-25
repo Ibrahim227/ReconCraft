@@ -11,12 +11,14 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template, send_file, session
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config['UPLOAD_FOLDER'] = "uploads"
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
