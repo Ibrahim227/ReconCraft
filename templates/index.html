@@ -214,6 +214,7 @@
 
               <!-- Submit Button -->
               <div class="col-md-auto ms-auto">
+                <button type="button" class="btn btn-outline-danger ms-2" id="stop-btn" style="display:none;">🛑 Stop</button>
                 <button type="submit" class="btn btn-primary" id="run-btn">🚀 Run Scan</button>
               </div>
             </div>
@@ -294,6 +295,7 @@
   <script>
     const form = document.getElementById('scan-form');
     const runBtn = document.getElementById('run-btn');
+    const stopBtn = document.getElementById('stop-btn');
     const loadingDiv = document.getElementById('loading');
     const resultsDiv = document.getElementById('results');
     const resultDomainSpan = document.getElementById('result-domain');
@@ -303,6 +305,7 @@
     const passiveList = document.getElementById('passive-list');
     const activeList = document.getElementById('active-list');
     const body = document.body;
+    const API_BASE = "https://reconcraft.onrender.com";
 
     let pollInterval = null;
     let durationInterval = null;
@@ -374,11 +377,20 @@
       }
 
       runBtn.disabled = true;
+      stopBtn.style.display = "inline-block";
       loadingDiv.classList.add('show');
       commandLog.classList.remove('show');
       commandLog.innerText = '';
       startTimer();
 
+      stopBtn.addEventListener("click", () => {
+        clearInterval(pollInterval);
+        stopTimer();
+        stopBtn.style.display = "none";
+        runBtn.disabled = false;
+        loadingDiv.classList.remove("show");
+        console.log("Scan stopped by user.");
+      });
 
       const selectedTools = Array.from(document.querySelectorAll('input[name="tools"]:checked')).map(el => el.value);
 
@@ -398,7 +410,6 @@
         const wordlistFile = document.getElementById('wordlist_file').files[0];
         if (wordlistFile) formData.append('wordlist_file', wordlistFile);
 
-        const API_BASE = "https://reconcraft.onrender.com";
         const domainFile = document.getElementById('domain_file').files[0];
         if (domainFile) formData.append('domain_file', domainFile);
 
