@@ -398,10 +398,11 @@
         const wordlistFile = document.getElementById('wordlist_file').files[0];
         if (wordlistFile) formData.append('wordlist_file', wordlistFile);
 
+        const API_BASE = "https://reconcraft.onrender.com";
         const domainFile = document.getElementById('domain_file').files[0];
         if (domainFile) formData.append('domain_file', domainFile);
 
-        fetch('/async_scan', {
+        fetch(`${API_BASE}/async_scan`, {
           method: 'POST',
           body: formData
         })
@@ -409,7 +410,7 @@
           .then(handleScanResponse)
           .catch(handleScanError);
       } else {
-        fetch('/async_scan', {
+        fetch(`${API_BASE}/async_scan`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ domain, tools: selectedTools })
