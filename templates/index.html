@@ -339,7 +339,7 @@
 
     function startPolling(domain) {
       pollInterval = setInterval(() => {
-        fetch(`/scan_results/${domain}`)
+        fetch(`${API_BASE}/scan_results/${domain}`)
           .then(response => response.json())
           .then(data => {
             if (data.commands) {
