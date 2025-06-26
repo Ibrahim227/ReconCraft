@@ -324,17 +324,13 @@
           alert("Scan timed out. Please try again or use fewer tools.");
           loadingDiv.classList.remove("show");
           runBtn.disabled = false;
+          stopBtn.style.display = "none";
         }
       }, 1000);
     }
 
     function stopTimer() {
       clearInterval(durationInterval);
-    }
-
-    function updateResults(passive, active) {
-      passiveList.innerHTML = passive.map(item => `<li class="list-group-item">${item}</li>`).join('');
-      activeList.innerHTML = active.map(item => `<li class="list-group-item list-group-item-success">${item}</li>`).join('');
     }
 
     function startPolling(domain) {
@@ -349,26 +345,38 @@
             if (data.status === "completed") {
               clearInterval(pollInterval);
               stopTimer();
+              loadingDiv.classList.remove("show");
+              stopBtn.style.display = "none";
+              runBtn.disabled = false;
+              // Navigate to results page
               window.location.href = `/results/${domain}`;
             }
           })
           .catch(err => {
             clearInterval(pollInterval);
             stopTimer();
-            alert("Error polling results. Please try again.");
-            runBtn.disabled = false;
             loadingDiv.classList.remove("show");
+            stopBtn.style.display = "none";
+            runBtn.disabled = false;
+            alert("Error polling results. Please try again.");
           });
       }, 3000);
     }
 
+    // Attach stop button listener once on page load
+    stopBtn.addEventListener("click", () => {
+      if (pollInterval) clearInterval(pollInterval);
+      stopTimer();
+      loadingDiv.classList.remove("show");
+      stopBtn.style.display = "none";
+      runBtn.disabled = false;
+      commandLog.classList.remove('show');
+      alert("Scan stopped by user.");
+    });
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const domain = document.getElementById('domain').value.trim();
-      if (!domain || !/^[a-zA-Z0-9.-]+$/.test(domain)) {
-        alert("Enter a valid domain name.");
-        return;
-      }
+      // ... your existing validation code ...
 
       runBtn.disabled = true;
       stopBtn.style.display = "inline-block";
@@ -376,15 +384,6 @@
       commandLog.classList.remove('show');
       commandLog.innerText = '';
       startTimer();
-
-      stopBtn.addEventListener("click", () => {
-        clearInterval(pollInterval);
-        stopTimer();
-        stopBtn.style.display = "none";
-        runBtn.disabled = false;
-        loadingDiv.classList.remove("show");
-        console.log("Scan stopped by user.");
-      });
 
       const selectedTools = Array.from(document.querySelectorAll('input[name="tools"]:checked')).map(el => el.value);
 
@@ -395,6 +394,15 @@
       commandLog.classList.remove('show');
       commandLog.innerText = '';
       startTimer();
+
+<!--       stopBtn.addEventListener("click", () => { -->
+<!--         clearInterval(pollInterval); -->
+<!--         stopTimer(); -->
+<!--         stopBtn.style.display = "none"; -->
+<!--         runBtn.disabled = false; -->
+<!--         loadingDiv.classList.remove("show"); -->
+<!--         console.log("Scan stopped by user."); -->
+<!--       }); -->
 
       if (useFormData) {
         const formData = new FormData();
