@@ -150,6 +150,7 @@ class Recon:
             parsed = urlparse(url)
             if parsed.path or parsed.query:
                 return f"{parsed.path}?{parsed.query}" if parsed.query else parsed.path
+            return None
         except Exception as e:
             return f"Error: {e}"
 
