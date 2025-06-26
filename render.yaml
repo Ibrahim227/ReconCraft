@@ -9,4 +9,6 @@ services:
         value: production
       - key:  RECON_API_KEY
         value: myapikey
+      - key: PATH
+        value: /opt/render/project/.gopath/bin:/opt/render/project/.venv/bin:/usr/local/bin:/usr/bin:/bin
     autoDeploy: true
