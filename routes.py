@@ -79,7 +79,7 @@ class Recon:
             return None
 
     def subfinder_enum(self):
-        return self.run_command(["subfinder", "-d", self.domain, "-all", "-recursive"], f"{self.domain}_subs.txt")
+        return self.run_command(["subfinder", "-d", self.domain, "-recursive"], f"{self.domain}_subs.txt")
 
     def assetfinder_enum(self):
         output = os.path.join(self.output_dir, f"{self.domain}_assetfinder.txt")
