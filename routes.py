@@ -4,12 +4,13 @@ import re
 import shutil
 import subprocess
 import threading
+import traceback
 from datetime import datetime
 from io import BytesIO
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request, send_file
+from flask import Flask, abort, jsonify, render_template, request, send_file
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -79,7 +80,7 @@ class Recon:
             return None
 
     def subfinder_enum(self):
-        return self.run_command(["subfinder", "-d", self.domain, "-recursive"], f"{self.domain}_subs.txt")
+        return self.run_command(["subfinder", "-d", self.domain], f"{self.domain}_subs.txt")
 
     def assetfinder_enum(self):
         output = os.path.join(self.output_dir, f"{self.domain}_assetfinder.txt")
@@ -166,6 +167,8 @@ class Recon:
         alterx_results = []
         httpx_results = []
 
+        print(f"🔬 Custom scan started for {self.domain} with tools: {tools}")
+
         def flatten_list(lst):
             for item in lst:
                 yield item
@@ -176,6 +179,7 @@ class Recon:
                 commands_run.append("subfinder")
                 subfinder_results = self.load_file_as_list(path)
                 all_subs.update(flatten_list(subfinder_results))
+                print(f"✅ Subfinder found {len(subfinder_results)} results")
 
         if "assetfinder" in tools and tool_exists("assetfinder"):
             path = self.assetfinder_enum()
@@ -183,6 +187,7 @@ class Recon:
                 commands_run.append("assetfinder")
                 assetfinder_results = self.load_file_as_list(path)
                 all_subs.update(flatten_list(assetfinder_results))
+                print(f"✅ Assetfinder found {len(assetfinder_results)} results")
 
         if "crtsh" in tools and tool_exists("crtsh"):
             path = self.crtsh_enum()
@@ -190,6 +195,7 @@ class Recon:
                 commands_run.append("crtsh")
                 crtsh_results = self.load_file_as_list(path)
                 all_subs.update(flatten_list(crtsh_results))
+                print(f"✅ CRTSH found {len(crtsh_results)} results")
 
         all_subs_file = os.path.join(self.output_dir, f"{self.domain}_all.txt")
         with open(all_subs_file, "w") as f:
@@ -201,6 +207,7 @@ class Recon:
                 commands_run.append("alterx")
                 alterx_results = self.load_file_as_list(altered)
                 all_subs.update(flatten_list(alterx_results))
+                print(f"✅ Alterx found {len(alterx_results)} results")
 
         combined_file = os.path.join(self.output_dir, f"{self.domain}_combined.txt")
         with open(combined_file, "w") as f:
@@ -212,6 +219,7 @@ class Recon:
                 commands_run.append("dnsx")
                 dnsx_results = self.load_file_as_list(dnsx_path)
                 active = dnsx_results
+                print(f"✅ Dnsx found {len(dnsx_results)} results")
 
         elif "httpx" in tools and tool_exists("httpx"):
             httpx_path = self.run_httpx(combined_file)
@@ -219,10 +227,12 @@ class Recon:
                 commands_run.append("httpx")
                 httpx_results = self.load_file_as_list(httpx_path)
                 active = httpx_results
+                print(f"✅ Httpx found {len(httpx_results)} results")
 
         if "urls" in tools and tool_exists("urls"):
             _, urls, crawlers_run = self.run_url_crawlers()
             commands_run.extend(crawlers_run)
+            print(f"✅ URLs found {len(crawlers_run)} results")
 
         passive = sorted(all_subs - set(active))
         return passive, active, urls, crtsh_results, dnsx_results, subfinder_results, assetfinder_results, alterx_results, httpx_results, commands_run
@@ -230,10 +240,17 @@ class Recon:
 
 def run_scan(domain, tools):
     try:
-        cache_key = f"{domain}:{sorted(tools)}"
+        domain = sanitize_domain(domain)
+        cache_key = f"{domain}:{sorted(tools)}:{datetime.now().timestamp()}"
+
+        print(f"🚀 Starting scan for: {domain}")
+        print(f"🔧 Tools selected: {tools}")
+        print(f"🧩 Current scan_results keys: {list(scan_results.keys())}")
+
         if cache_key in scan_results:
             print("🌀 Using cached result")
             return
+
         recon = Recon(domain)
         (
             passive, active, urls,
@@ -241,7 +258,15 @@ def run_scan(domain, tools):
             subfinder_results, assetfinder_results, alterx_results, httpx_results,
             cmds
         ) = recon.run_custom_scan(tools)
-        print("🧪 Preparing results for:", domain)
+
+        # Safe fallback
+        crtsh_results = crtsh_results or []
+        dnsx_results = dnsx_results or []
+        subfinder_results = subfinder_results or []
+        assetfinder_results = assetfinder_results or []
+        alterx_results = alterx_results or []
+        httpx_results = httpx_results or []
+
         with scan_lock:
             scan_results[domain] = {
                 "domain": domain,
@@ -250,20 +275,28 @@ def run_scan(domain, tools):
                 "urls": urls,
                 "crtsh_subdomains": crtsh_results,
                 "dnsx_subdomains": dnsx_results,
-                "subfinder_subdomains": list(subfinder_results),
-                "assetfinder_subdomains": list(assetfinder_results),
-                "alterx_subdomains": list(alterx_results),
-                "httpx_subdomains": list(httpx_results),
+                "subfinder_subdomains": subfinder_results,
+                "assetfinder_subdomains": assetfinder_results,
+                "alterx_subdomains": alterx_results,
+                "httpx_subdomains": httpx_results,
                 "subdomains": sorted(set(passive + active))
             }
             scan_status[domain] = {
                 "status": "completed",
                 "commands": cmds
             }
-            print("🧪 Results:", scan_results[domain])
+
+        # print(f"✅ Scan complete for: {domain}")
+        # print(f"🧩 scan_results keys now: {list(scan_results.keys())}")
+        # print(f"📦 Stored results for {domain}: {len(passive)} passive, {len(active)} active, {len(urls)} urls")
+        print(f"🧩 FINAL scan_results keys: {list(scan_results.keys())}")
+        print(f"📦 Stored scan data: {json.dumps(scan_results[domain], indent=2)}")
+
     except Exception as e:
+        print(f"❌ Error during scan for {domain}: {e}")
+        traceback.print_exc()
         with scan_lock:
-            scan_status[domain] = {
+            scan_status[sanitize_domain(domain)] = {
                 "status": "error",
                 "message": str(e)
             }
@@ -293,45 +326,52 @@ def async_scan():
     if not domain:
         return jsonify({'status': 'error', 'message': 'Missing domain'}), 400
 
+    print(f"🧵 Spawning scan thread for: {domain} | Tools: {tools}")
+
     threading.Thread(target=run_scan, args=(domain, tools)).start()
+
     with scan_lock:
         scan_status[domain] = {'status': 'running', 'commands': []}
 
     return jsonify({'status': 'Scan started'})
 
 
-@app.route("/results/<domain>")
-@limiter.exempt
-def show_results(domain):
-    with scan_lock:
-        print("🧩 Looking up:", domain)
-        print("🧩 scan_results keys:", scan_results.keys())
-        result = scan_results.get(domain)
-
-    if not result:
-        return "Results not ready or domain not found", 404
-
-    if not isinstance(result, dict):
-        return f"Error: result is not a dict: {type(result)} - {result}", 500
-
-    return render_template("results.html",
-                           domain=domain,
-                           passive=result["passive"],
-                           active=result["active"],
-                           urls=result["urls"],
-                           subfinder_subdomains=result.get("subfinder_subdomains", []),
-                           assetfinder_subdomains=result.get("assetfinder_subdomains", []),
-                           alterx_subdomains=result.get("alterx_subdomains", []),
-                           httpx_subdomains=result.get("httpx_subdomains", []),
-                           crtsh_subdomains=result.get("crtsh_subdomains", []),
-                           dnsx_subdomains=result.get("dnsx_subdomains", []))
-
-
 @app.route("/scan_results/<domain>")
 def get_scan_status(domain):
     with scan_lock:
-        status = scan_status.get(domain, {"status": "in_progress"})
-        return jsonify(status)
+        domain = sanitize_domain(domain)
+        status = scan_status.get(domain)
+        print(f"📡 Polled scan status for: {domain} → {status}")
+        return jsonify(status or {"status": "not_found"})
+
+
+@app.route("/results/<domain>")
+@limiter.exempt
+def show_results(domain):
+    domain = sanitize_domain(domain)
+    with scan_lock:
+        print("🧩 Looking up:", domain)
+        print("🧩 scan_results keys:", scan_results.keys())
+        results = scan_results.get(domain)
+
+    if not results:
+        print(f"❗ No results for {domain}. Available keys: {list(scan_results.keys())}")
+        abort(404)
+
+    if not isinstance(results, dict):
+        return f"Error: result is not a dict: {type(results)} - {results}", 500
+
+    return render_template("results.html",
+                           domain=domain,
+                           passive=results["passive"],
+                           active=results["active"],
+                           urls=results["urls"],
+                           subfinder_subdomains=results.get("subfinder_subdomains", []),
+                           assetfinder_subdomains=results.get("assetfinder_subdomains", []),
+                           alterx_subdomains=results.get("alterx_subdomains", []),
+                           httpx_subdomains=results.get("httpx_subdomains", []),
+                           crtsh_subdomains=results.get("crtsh_subdomains", []),
+                           dnsx_subdomains=results.get("dnsx_subdomains", []))
 
 
 @app.route("/download", methods=["GET"])
