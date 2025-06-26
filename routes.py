@@ -315,9 +315,11 @@ def index():
 @app.route("/async_scan", methods=["POST"])
 def async_scan():
     if request.content_type.startswith("application/json"):
-        data = request.get_json()
-        domain = data.get("domain", "").strip()
+        data = request.get_json() or {}
+        domain_raw = data.get("domain", "")
+        domain = domain_raw.strip() if isinstance(domain_raw, str) else str(domain_raw).strip()
         tools = data.get("tools", [])
+
     else:
         domain = request.form.get("domain", "").strip()
         tools = request.form.getlist("tools")
