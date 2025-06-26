@@ -183,7 +183,7 @@
             <h5 class="section-header">Httpx (Active)
               <span class="badge bg-success subdomain-badge">{{ httpx_subdomains|length }}</span>
             </h5>
-            {% for sub in httpx_subdomains %}
+            {% if httpx_subdomains %}
               <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
                 {% for sub in httpx_subdomains %}
                   <li class="list-group-item">{{ sub }}</li>
