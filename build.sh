@@ -9,8 +9,8 @@ go install -v github.com/projectdiscovery/httpx/cmd/httpx@latest
 go install -v github.com/projectdiscovery/dnsx/cmd/dnsx@latest
 
 # shellcheck disable=SC2016
-echo 'export PATH=$PATH:$(go env GOPATH)/bin'
+echo 'export PATH=$PATH:$(go env GOPATH)/bin' >> ~/.bashrc
 # shellcheck disable=SC1090
-# source ~/.bashrc
+source ~/.bashrc
 
 echo "[+] Build complete."
