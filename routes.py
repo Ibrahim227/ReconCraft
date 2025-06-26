@@ -304,8 +304,9 @@ def async_scan():
 @limiter.exempt
 def show_results(domain):
     with scan_lock:
+        print("🧩 Looking up:", domain)
+        print("🧩 scan_results keys:", scan_results.keys())
         result = scan_results.get(domain)
-        print("🔁 Rendering results for:", domain, "| Type:", type(result))
 
     if not result:
         return "Results not ready or domain not found", 404
