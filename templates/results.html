@@ -136,7 +136,6 @@
             {% else %}
               <p class="text-muted mb-0">No results from Subfinder.</p>
             {% endfor %}
-
           </div>
         </div>
       </div>
@@ -169,10 +168,10 @@
               <li class="list-group-item d-flex justify-content-between align-items-center">
                 {{ sub }}
                 <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
-              </li>>
+              </li>
             {% else %}
               <p class="text-muted mb-0">No results from Alterx.</p>
-            {% endif %}
+            {% endfor %}
           </div>
         </div>
       </div>
@@ -186,16 +185,15 @@
             {% if httpx_subdomains %}
               <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
                 {% for sub in httpx_subdomains %}
-                  <li class="list-group-item">{{ sub }}</li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ sub }}
+                    <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+                  </li>
                 {% endfor %}
               </ul>
             {% else %}
               <p class="text-muted mb-0">No active subdomains found by Httpx.</p>
-            {% endif %}<br>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ sub }}
-              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
-            </li>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -212,16 +210,15 @@
             {% if dnsx_subdomains %}
               <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
                 {% for sub in dnsx_subdomains %}
-                  <li class="list-group-item d-flex justify-content-between align-items-center">{{ sub }}</li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                      {{ sub }}
+                      <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+                    </li>
                 {% endfor %}
               </ul>
             {% else %}
               <p class="text-muted mb-0">No DNS resolved domains found by DNSX.</p>
-            {% endif %}<br>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ sub }}
-              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
-            </li>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -236,16 +233,15 @@
             {% if crtsh_subdomains %}
               <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
                 {% for sub in crtsh_subdomains %}
-                  <li class="list-group-item d-flex justify-content-between align-items-center">{{ sub }}</li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ sub }}
+                    <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+                  </li>
                 {% endfor %}
               </ul>
             {% else %}
               <p class="text-muted mb-0">No CRT.sh results.</p>
-            {% endif %}<br>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ sub }}
-              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
-            </li>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -260,16 +256,15 @@
             {% if urls %}
               <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
                 {% for url in urls %}
-                  <li class="list-group-item d-flex justify-content-between align-items-center">{{ url }}</li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ url }}
+                    <button onclick="navigator.clipboard.writeText('{{ url }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy URL">📋</button>
+                  </li>
                 {% endfor %}
               </ul>
             {% else %}
               <p class="text-muted mb-0">No URLs crawled.</p>
-            {% endif %}<br>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ url }}
-              <button onclick="navigator.clipboard.writeText('{{ url }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy URL">📋</button>
-            </li>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -286,16 +281,15 @@
             {% if passive %}
               <ul class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
                 {% for sub in passive %}
-                  <li class="list-group-item">{{ sub }}</li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ sub }}
+                    <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+                  </li>
                 {% endfor %}
               </ul>
             {% else %}
               <p class="text-muted">No passive subdomains found.</p>
-            {% endif %}<br>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ sub }}
-              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
-            </li>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -309,16 +303,15 @@
             {% if active %}
               <ul class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
                 {% for sub in active %}
-                  <li class="list-group-item">{{ sub }}</li>
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ sub }}
+                    <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+                  </li>
                 {% endfor %}
               </ul>
             {% else %}
               <p class="text-muted">No active subdomains found.</p>
-            {% endif %}<br>
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ sub }}
-              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
-            </li>
+            {% endif %}
           </div>
         </div>
       </div>
