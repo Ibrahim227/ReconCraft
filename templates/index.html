@@ -371,7 +371,7 @@
       stopBtn.style.display = "none";
       runBtn.disabled = false;
       commandLog.classList.remove('show');
-      alert("Scan stopped by user.");
+      console.log("Scan stopped by user.");
     });
 
     form.addEventListener('submit', (e) => {
@@ -393,16 +393,7 @@
       loadingDiv.classList.add('show');
       commandLog.classList.remove('show');
       commandLog.innerText = '';
-      startTimer();
-
-<!--       stopBtn.addEventListener("click", () => { -->
-<!--         clearInterval(pollInterval); -->
-<!--         stopTimer(); -->
-<!--         stopBtn.style.display = "none"; -->
-<!--         runBtn.disabled = false; -->
-<!--         loadingDiv.classList.remove("show"); -->
-<!--         console.log("Scan stopped by user."); -->
-<!--       }); -->
+      startTimer();1
 
       if (useFormData) {
         const formData = new FormData();
