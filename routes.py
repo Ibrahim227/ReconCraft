@@ -410,6 +410,6 @@ def download():
     buffer.seek(0)
     return send_file(buffer, mimetype=mime, as_attachment=True, download_name=f"{domain}_subdomains.{ext}")
 
-
-if __name__ == "__main__":
-    app.run(debug=True)
+#
+# if __name__ == "__main__":
+#     app.run(debug=True)
