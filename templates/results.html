@@ -150,14 +150,18 @@
             <h5 class="section-header">Assetfinder
               <span class="badge bg-info subdomain-badge">{{ assetfinder_subdomains|length }}</span>
             </h5>
-            {% for sub in assetfinder_subdomains %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ sub }}
-              <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
-            </li>
+            {% if assetfinder_subdomains %}
+              <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
+                {% for sub in assetfinder_subdomains %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ sub }}
+                    <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+                  </li>
+                {% endfor %}
+              </ul>
             {% else %}
               <p class="text-muted mb-0">No results from Assetfinder.</p>
-            {% endfor %}
+            {% endif %}
           </div>
         </div>
       </div>
@@ -168,14 +172,18 @@
             <h5 class="section-header">Alterx
               <span class="badge bg-warning text-dark subdomain-badge">{{ alterx_subdomains|length }}</span>
             </h5>
-            {% for sub in alterx_subdomains %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                {{ sub }}
-                <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
-              </li>
+            {% if alterx_subdomains %}
+              <ul class="list-group list-group-flush" style="max-height: 220px; overflow-y: auto;">
+                {% for sub in alterx_subdomains %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ sub }}
+                    <button onclick="navigator.clipboard.writeText('{{ sub }}')" class="btn btn-sm btn-outline-secondary" aria-label="Copy subdomain">📋</button>
+                  </li>
+                {% endfor %}
+              </ul>
             {% else %}
               <p class="text-muted mb-0">No results from Alterx.</p>
-            {% endfor %}
+            {% endif %}
           </div>
         </div>
       </div>
