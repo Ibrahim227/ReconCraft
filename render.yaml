@@ -3,7 +3,7 @@ services:
     name: reconcraft-api
     env: python
     buildCommand: ./build.sh && pip install -r requirements.txt
-    start: gunicorn routes:app
+    startCommand: gunicorn routes:app
     envVars:
       - key: FLASK_ENV
         value: production
