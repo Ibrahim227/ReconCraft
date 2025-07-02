@@ -21,6 +21,7 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
+
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config['UPLOAD_FOLDER'] = "uploads"
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -315,9 +316,8 @@ def index():
 @app.route("/async_scan", methods=["POST", "GET", "OPTIONS"])
 def async_scan():
     if request.content_type.startswith("application/json"):
-        data = request.get_json() or {}
-        domain_raw = data.get("domain", "")
-        domain = domain_raw.strip() if isinstance(domain_raw, str) else str(domain_raw).strip()
+        data = request.get_json()
+        domain = data.get("domain", "").strip()
         tools = data.get("tools", [])
 
     else:
