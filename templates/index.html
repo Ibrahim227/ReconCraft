@@ -423,6 +423,7 @@
           .then(handleScanResponse)
           .catch(handleScanError);
       } else {
+        console.log("📡 Sending request with:", { domain, tools: selectedTools });
         fetch(`${API_BASE}/async_scan`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -432,13 +433,16 @@
           .then(handleScanResponse)
           .catch(handleScanError);
       }
+      console.log("✅ Request sent, waiting for scan response...");
 
       function handleScanResponse(data) {
-        if (data.status === 'Scan started') {
+        console.log("📦 Scan Response:", data);
+        if (data.status && data.status.toLowerCase().includes("scan")) {
           resultDomainSpan.textContent = domain;
           startPolling(domain);
         } else {
-          alert('Failed to start scan');
+          alert('⚠️ Failed to start scan');
+          console.error("🚫 Unexpected response:", data);
           runBtn.disabled = false;
           loadingDiv.classList.remove('show');
           stopTimer();
@@ -446,7 +450,8 @@
       }
 
       function handleScanError(err) {
-        alert('Error starting scan');
+        console.error("❌ Scan Error:", err);
+        alert('🚨 Error starting scan (see console)');
         runBtn.disabled = false;
         loadingDiv.classList.remove('show');
         stopTimer();
