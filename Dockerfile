@@ -6,12 +6,9 @@ RUN apt-get update && \
     apt-get install -y python3 python3-pip curl git && \
     apt-get clean
 
-# Set Go environment variables
+# Set environment variables
+ENV PATH="/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 ENV GOPATH=/go
-ENV PATH=$PATH:$GOPATH/bin
-
-# Create Go binary path
-RUN mkdir -p "$GOPATH/bin"
 
 # Install recon tools via Go
 RUN go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest && \
@@ -22,8 +19,7 @@ RUN go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest && 
     go install github.com/tomnomnom/waybackurls@latest && \
     go install github.com/lc/gau/v2/cmd/gau@latest && \
     go install github.com/tomnomnom/qsreplace@latest && \
-    go install github.com/projectdiscovery/katana/cmd/katana@latest && \
-    cp "$GOPATH/bin/"* /usr/local/bin/
+    go install github.com/projectdiscovery/katana/cmd/katana@latest
 
 # Set working directory
 WORKDIR /app
@@ -34,8 +30,8 @@ COPY . .
 # Install Python dependencies
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Expose port (Flask default)
+# Expose Flask port
 EXPOSE 5000
 
-# Start your Flask app using Gunicorn
+# Start Flask app via gunicorn
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "routes:app"]
