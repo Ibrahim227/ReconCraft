@@ -1,12 +1,8 @@
 services:
   - type: web
     name: reconcraft
-    env: python
-    buildCommand: ./build.sh && pip install -r requirements.txt
-    startCommand: gunicorn routes:app
-    envVars:
-      - key: FLASK_ENV
-        value: production
-      - key: RECON_API_KEY
-        value: myapikey
-    autoDeploy: true
+    env: docker
+    plan: free
+    branch: main
+    dockerfilePath: Dockerfile
+    runtime: docker
