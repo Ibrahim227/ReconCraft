@@ -20,7 +20,7 @@ from werkzeug.utils import secure_filename
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins="*")
+CORS(app)
 
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev")
 app.config['UPLOAD_FOLDER'] = "uploads"
