@@ -22,6 +22,7 @@ go install github.com/tomnomnom/qsreplace@latest || true
 go install github.com/hakluke/hakrawler@latest || true
 go install github.com/projectdiscovery/katana/cmd/katana@latest || true
 go install github.com/jaeles-project/gospider@latest || true
+# shellcheck disable=SC2015
 git clone https://github.com/projectdiscovery/alterx.git && cd alterx/v2/cmd/alterx && go install . || true
 
 
