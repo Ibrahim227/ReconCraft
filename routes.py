@@ -376,7 +376,7 @@ def show_results(domain):
                            dnsx_subdomains=results.get("dnsx_subdomains", []))
 
 
-@app.route("/check_tools")
+@app.route("/check_tools", methods=["GET"])
 def check_tools():
     tools = ["subfinder", "assetfinder", "alterx", "dnsx", "httpx", "gau"]
     result = {}
