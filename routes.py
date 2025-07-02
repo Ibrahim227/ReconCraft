@@ -312,7 +312,7 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/async_scan", methods=["POST"])
+@app.route("/async_scan", methods=["POST", "GET", "OPTIONS"])
 def async_scan():
     if request.content_type.startswith("application/json"):
         data = request.get_json() or {}
