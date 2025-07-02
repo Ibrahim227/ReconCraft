@@ -376,7 +376,16 @@
 
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      // ... your existing validation code ...
+
+      const domain = document.getElementById('domain').value.trim();
+      if (!domain) {
+        alert("Please enter a domain.");
+        runBtn.disabled = false;
+        loadingDiv.classList.remove('show');
+        stopTimer();
+        return;
+      }
+
 
       runBtn.disabled = true;
       stopBtn.style.display = "inline-block";
@@ -393,7 +402,7 @@
       loadingDiv.classList.add('show');
       commandLog.classList.remove('show');
       commandLog.innerText = '';
-      startTimer();1
+      startTimer();
 
       if (useFormData) {
         const formData = new FormData();
