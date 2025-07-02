@@ -376,6 +376,19 @@ def show_results(domain):
                            dnsx_subdomains=results.get("dnsx_subdomains", []))
 
 
+@app.route("/check_tools")
+def check_tools():
+    tools = ["subfinder", "assetfinder", "alterx", "dnsx", "httpx", "gau"]
+    result = {}
+    for tool in tools:
+        try:
+            output = subprocess.check_output([tool, "-h"], stderr=subprocess.STDOUT).decode()
+            result[tool] = "✅ Available"
+        except Exception as e:
+            result[tool] = f"❌ Missing or Error: {str(e)}"
+    return result
+
+
 @app.route("/download", methods=["GET"])
 @limiter.exempt
 def download():
