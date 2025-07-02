@@ -55,7 +55,7 @@ def sanitize_domain(domain):
 
 class Recon:
     def __init__(self, domain, output_dir="/tmp/recon_output", wordlist_path=None):
-        self.domain = sanitize_domain(domain)
+        self.domain = sanitize_domain(domain).lower()
         self.start_time = datetime.now()
         self.timestamp = self.start_time.strftime("%Y%m%d_%H%M%S")
         self.output_dir = os.path.join(output_dir, f"{self.domain}_{self.timestamp}")
@@ -189,7 +189,7 @@ class Recon:
                 all_subs.update(flatten_list(assetfinder_results))
                 print(f"✅ Assetfinder found {len(assetfinder_results)} results")
 
-        if "crtsh" in tools and tool_exists("crtsh"):
+        if "crtsh" in tools:
             path = self.crtsh_enum()
             if path:
                 commands_run.append("crtsh")
@@ -240,7 +240,7 @@ class Recon:
 
 def run_scan(domain, tools):
     try:
-        domain = sanitize_domain(domain)
+        domain = sanitize_domain(domain).lower()
         cache_key = f"{domain}:{sorted(tools)}:{datetime.now().timestamp()}"
 
         print(f"🚀 Starting scan for: {domain}")
@@ -296,7 +296,7 @@ def run_scan(domain, tools):
         print(f"❌ Error during scan for {domain}: {e}")
         traceback.print_exc()
         with scan_lock:
-            scan_status[sanitize_domain(domain)] = {
+            scan_status[sanitize_domain(domain).lower()] = {
                 "status": "error",
                 "message": str(e)
             }
@@ -307,7 +307,7 @@ def ratelimit_handler(e):
     return jsonify({f'status': f'error + {e}', 'message': 'Too many requests. Please try again later.'}), 429
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET", "OPTIONS"])
 def index():
     return render_template("index.html")
 
@@ -341,7 +341,7 @@ def async_scan():
 @app.route("/scan_results/<domain>")
 def get_scan_status(domain):
     with scan_lock:
-        domain = sanitize_domain(domain)
+        domain = sanitize_domain(domain).lower()
         status = scan_status.get(domain)
         print(f"📡 Polled scan status for: {domain} → {status}")
         return jsonify(status or {"status": "not_found"})
@@ -350,7 +350,7 @@ def get_scan_status(domain):
 @app.route("/results/<domain>")
 @limiter.exempt
 def show_results(domain):
-    domain = sanitize_domain(domain)
+    domain = sanitize_domain(domain).lower()
     with scan_lock:
         print("🧩 Looking up:", domain)
         print("🧩 scan_results keys:", scan_results.keys())
@@ -410,6 +410,6 @@ def download():
     buffer.seek(0)
     return send_file(buffer, mimetype=mime, as_attachment=True, download_name=f"{domain}_subdomains.{ext}")
 
-#
-# if __name__ == "__main__":
-#     app.run(debug=True)
+
+if __name__ == "__main__":
+    app.run(debug=True)
