@@ -2,13 +2,11 @@ services:
   - type: web
     name: reconcraft-api
     env: python
-    buildCommand: "./build.sh && pip install -r requirements.txt"
-    startCommand: gunicorn routes:app
+    buildCommand: ./build.sh && pip install -r requirements.txt
+    start: gunicorn routes:app
     envVars:
       - key: FLASK_ENV
         value: production
       - key: RECON_API_KEY
         value: myapikey
-      - key: PYTHON_VERSION
-        value: "3.11"
     autoDeploy: true
