@@ -240,6 +240,11 @@ class Recon:
 
 
 def run_scan(domain, tools):
+    print("📂 PATH:", os.getenv("PATH"))
+    print("🔍 subfinder found at:", shutil.which("subfinder"))
+    print("🔍 dnsx found at:", shutil.which("dnsx"))
+    print("🔍 httpx found at:", shutil.which("httpx"))
+
     try:
         domain = sanitize_domain(domain).lower()
         cache_key = f"{domain}:{sorted(tools)}:{datetime.now().timestamp()}"
