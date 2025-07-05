@@ -1,16 +1,19 @@
-# Use official Go base image with Python and Linux tools
+# Base image with Go and Python
 FROM golang:1.21-buster
 
-# Install system dependencies: Python, pip, Git, curl
+# Install system dependencies
 RUN apt-get update && \
     apt-get install -y python3 python3-pip curl git && \
     apt-get clean
 
-# Set environment variables
-ENV PATH="/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+# Set environment
 ENV GOPATH=/go
+ENV PATH=$PATH:$GOPATH/bin:/usr/local/go/bin
 
-# Install recon tools via Go
+# Copy and expose tools globally
+RUN mkdir -p "$GOPATH/bin"
+
+# Install all recon tools
 RUN go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest && \
     go install github.com/tomnomnom/assetfinder@latest && \
     go install github.com/projectdiscovery/alterx/cmd/alterx@latest && \
@@ -18,20 +21,22 @@ RUN go install github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest && 
     go install github.com/projectdiscovery/httpx/cmd/httpx@latest && \
     go install github.com/tomnomnom/waybackurls@latest && \
     go install github.com/lc/gau/v2/cmd/gau@latest && \
-    go install github.com/tomnomnom/qsreplace@latest && \
     go install github.com/projectdiscovery/katana/cmd/katana@latest
 
-# Set working directory
+# Copy binaries to /usr/local/bin (makes them available globally)
+RUN cp "$GOPATH/bin/"* /usr/local/bin/
+
+# Set workdir
 WORKDIR /app
 
-# Copy your app code into the container
+# Copy your code
 COPY . .
 
-# Install Python dependencies
+# Install Python requirements (Flask, gunicorn, etc.)
 RUN pip3 install --no-cache-dir -r requirements.txt
 
-# Expose Flask port
+# Expose port 5000
 EXPOSE 5000
 
-# Start Flask app via gunicorn
+# Launch app
 CMD ["gunicorn", "-b", "0.0.0.0:5000", "routes:app"]
