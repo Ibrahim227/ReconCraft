@@ -32,13 +32,9 @@ ReconCraft is a lightweight web-based tool designed for **automated reconnaissan
 | [waybackurls](https://github.com/tomnomnom/waybackurls)    | Archived URLs                 |
 | [katana](https://github.com/projectdiscovery/katana)       | Web crawling & discovery      |
 
----
-
-## 📸 Demo Preview
-
-![ReconCraft UI Preview](https://reconcraft.onrender.com)
 
 ---
+
 
 ## 🛠️ Installation
 
