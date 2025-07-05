@@ -41,6 +41,16 @@ ReconCraft is a lightweight web-based tool designed for **automated reconnaissan
 ```bash
 git clone https://github.com/yourusername/reconcraft.git
 cd reconcraft
+
+Ensure Python 3.10+ and Go are installed
+
+Install required tools (subfinder, httpx, etc.)
+
+Run Flask app:
+>>>   python3 -m venv venv
+>>> source venv/bin/activate
+>>> pip install -r requirements.txt
+>>> python routes.py
 ```
 
 
